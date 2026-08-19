@@ -14,6 +14,8 @@
 
 import { apiClient, SearchedProduct, PlacedOrderData } from "@/lib/api/client";
 
+export type { SearchedProduct, PlacedOrderData };
+
 export interface ChatTransportInput {
   sessionId: string;
   tenantId: string;

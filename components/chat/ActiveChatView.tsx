@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ChatMessage } from "@/types";
 import { useOrder } from "@/lib/context/OrderContext";
+import { useChat } from "@/lib/context/ChatContext";
+import { useSession } from "@/lib/context/SessionContext";
 
 interface ActiveChatViewProps {
   messages: ChatMessage[];
@@ -13,14 +15,26 @@ interface ActiveChatViewProps {
 export function ActiveChatView({ messages, isTyping }: ActiveChatViewProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const { currentOrder } = useOrder();
+  const { searchedProducts, placeTableOrder } = useChat();
+  const { session } = useSession();
+  const [orderingProductId, setOrderingProductId] = useState<string | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
+  }, [messages, isTyping, searchedProducts]);
+
+  const handleOrderProduct = async (productId: string, name: string) => {
+    try {
+      setOrderingProductId(productId);
+      await placeTableOrder(productId, 1);
+    } finally {
+      setOrderingProductId(null);
+    }
+  };
 
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 max-w-4xl mx-auto w-full">
-      {/* Live Order Context Banner if Order Placed */}
+      {/* Live Order Context Banner if Order is Active */}
       {currentOrder && (
         <div className="bg-surface-container-lowest border border-primary-container/30 rounded-2xl p-4 shadow-card-soft flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -29,27 +43,27 @@ export function ActiveChatView({ messages, isTyping }: ActiveChatViewProps) {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-sm text-on-surface">Order {currentOrder.id}</span>
+                <span className="font-bold text-sm text-on-surface">Order #{currentOrder._id.slice(-4)}</span>
                 <span className="px-2 py-0.5 bg-tertiary-fixed text-on-tertiary-container rounded-full text-[10px] font-bold uppercase">
                   {currentOrder.status}
                 </span>
               </div>
               <p className="text-xs text-on-surface-variant">
-                {currentOrder.items.length} items · Total: ${currentOrder.totalAmount.toFixed(2)}
+                {currentOrder.items.length} items · Total: {currentOrder.totalAmount} {session.currency}
               </p>
             </div>
           </div>
           <Link
             href="/tracking"
-            className="px-3.5 py-2 bg-primary-container text-white rounded-xl text-xs font-bold hover:opacity-90 transition-all flex items-center gap-1 shadow-sm"
+            className="px-3.5 py-2 bg-primary-container text-white rounded-xl text-xs font-bold hover:opacity-90 transition-all flex items-center gap-1 shadow-sm flex-shrink-0"
           >
-            <span>Track Order</span>
+            <span>Live Status</span>
             <span className="material-symbols-outlined text-sm">arrow_forward</span>
           </Link>
         </div>
       )}
 
-      {/* Messages Stream */}
+      {/* Messages Feed */}
       {messages.map((msg) => {
         const isUser = msg.sender === "user";
         return (
@@ -64,7 +78,7 @@ export function ActiveChatView({ messages, isTyping }: ActiveChatViewProps) {
               </div>
             )}
 
-            {/* Bubble */}
+            {/* Message Bubble */}
             <div
               className={`max-w-[85%] md:max-w-lg rounded-2xl p-4 text-sm md:text-base transition-all shadow-card-soft ${
                 isUser
@@ -91,6 +105,53 @@ export function ActiveChatView({ messages, isTyping }: ActiveChatViewProps) {
           </div>
         );
       })}
+
+      {/* Searched Products Cards (Surfaced from Real Backend Menu Search) */}
+      {searchedProducts.length > 0 && (
+        <div className="space-y-2 pt-2">
+          <p className="text-xs font-bold text-secondary uppercase tracking-wider pl-12">
+            Suggested Items From Menu
+          </p>
+          <div className="pl-12 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {searchedProducts.map((prod) => (
+              <div
+                key={prod.productId}
+                className="p-3.5 bg-surface-container-lowest rounded-2xl border border-surface-variant shadow-card-soft flex items-center justify-between gap-3 hover:border-primary-container transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  {prod.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={prod.imageUrl}
+                      alt={prod.name}
+                      className="w-12 h-12 rounded-xl object-cover border border-surface-variant"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-xl">
+                      🍽️
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="font-bold text-xs text-on-surface">{prod.name}</h4>
+                    <p className="text-xs font-extrabold text-primary-container">
+                      {prod.price} {session.currency}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleOrderProduct(prod.productId, prod.name)}
+                  disabled={orderingProductId === prod.productId}
+                  className="px-3 py-1.5 bg-primary-fixed text-primary rounded-xl text-xs font-bold hover:bg-primary-container hover:text-white transition-all shadow-sm flex items-center gap-1"
+                >
+                  <span className="material-symbols-outlined text-sm">add</span>
+                  <span>{orderingProductId === prod.productId ? "Ordering..." : "Order"}</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Typing Indicator */}
       {isTyping && (

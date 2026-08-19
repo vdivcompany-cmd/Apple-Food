@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TableChat - Order Session</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary-fixed-dim": "#ffb693",
+                        "surface-container": "#efeeea",
+                        "surface": "#fbf9f5",
+                        "tertiary": "#934b19",
+                        "surface-container-highest": "#e4e2de",
+                        "primary-container": "#ff6b00",
+                        "on-tertiary-fixed": "#321200",
+                        "on-background": "#1b1c1a",
+                        "surface-dim": "#dbdad6",
+                        "inverse-primary": "#ffb693",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed": "#351000",
+                        "inverse-surface": "#30312e",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-container": "#532300",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "on-secondary-fixed-variant": "#474646",
+                        "outline-variant": "#e2bfb0",
+                        "on-primary": "#ffffff",
+                        "background": "#fbf9f5",
+                        "on-surface-variant": "#5a4136",
+                        "on-tertiary": "#ffffff",
+                        "outline": "#8e7164",
+                        "secondary-container": "#e5e2e1",
+                        "primary-fixed": "#ffdbcc",
+                        "secondary-fixed": "#e5e2e1",
+                        "on-primary-container": "#572000",
+                        "on-surface": "#1b1c1a",
+                        "on-secondary-container": "#656464",
+                        "on-secondary": "#ffffff",
+                        "surface-container-high": "#eae8e4",
+                        "tertiary-fixed-dim": "#ffb68c",
+                        "surface-bright": "#fbf9f5",
+                        "inverse-on-surface": "#f2f0ed",
+                        "tertiary-fixed": "#ffdbc9",
+                        "error-container": "#ffdad6",
+                        "surface-tint": "#a04100",
+                        "primary": "#a04100",
+                        "surface-variant": "#e4e2de",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-container": "#da834d",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "surface-container-low": "#f5f3ef",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed-variant": "#7a3000",
+                        "secondary": "#5f5e5e",
+                        "on-tertiary-fixed-variant": "#753401"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "base": "8px",
+                        "margin-desktop": "48px",
+                        "margin-mobile": "16px",
+                        "gutter": "16px",
+                        "lg": "24px",
+                        "sm": "12px",
+                        "xs": "4px",
+                        "xl": "32px",
+                        "md": "16px"
+                    },
+                    fontFamily: {
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "chat-text": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"]
+                    },
+                    fontSize: {
+                        "headline-lg-mobile": ["26px", { lineHeight: "32px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "chat-text": ["15px", { lineHeight: "22px", fontWeight: "400" }],
+                        "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+                        "headline-sm": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+                        "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+                        "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "label-md": ["14px", { lineHeight: "20px", letterSpacing: "0.05em", fontWeight: "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .typing-indicator span {
+            animation: blink 1.4s infinite both;
+            height: 6px;
+            width: 6px;
+            background: #5f5e5e; /* secondary color */
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 1px;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink {
+            0% { opacity: 0.2; transform: scale(0.8); }
+            20% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0.2; transform: scale(0.8); }
+        }
+        .glass-nav {
+            background-color: rgba(251, 249, 245, 0.8); /* surface color */
+            backdrop-filter: blur(12px);
+        }
+        
+        /* Custom scrollbar for chat area */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background-color: #dbdad6; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-background text-on-background h-full flex flex-col antialiased">
+<!-- TopNavBar -->
+<header class="glass-nav flex justify-between items-center px-margin-mobile md:px-margin-desktop w-full h-16 sticky top-0 z-50 shadow-sm border-b border-surface-variant/30">
+<div class="flex items-center gap-sm">
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">TableChat</span>
+</div>
+<!-- Desktop Nav Items -->
+<nav class="hidden md:flex items-center gap-lg h-full">
+<a class="h-full flex items-center text-primary font-bold border-b-2 border-primary" href="#">Chat</a>
+<a class="h-full flex items-center text-secondary dark:text-secondary-fixed hover:opacity-80 transition-opacity" href="#">My Order</a>
+</nav>
+<div class="flex items-center gap-md">
+<span class="font-label-md text-label-md text-secondary hidden md:block">Table 10</span>
+<div class="flex items-center gap-xs px-sm py-xs bg-error-container text-on-error-container rounded-full">
+<span class="material-symbols-outlined text-[16px] animate-pulse">sensors</span>
+<span class="font-label-md text-label-md">Live Session</span>
+</div>
+</div>
+</header>
+<div class="flex-1 flex overflow-hidden w-full max-w-[1200px] mx-auto bg-surface-container-low/30 relative">
+<!-- SideNavBar (Hidden on Mobile) -->
+<aside class="hidden md:flex flex-col h-full w-80 bg-surface-container-low shadow-md p-lg gap-md overflow-y-auto relative z-10 border-r border-surface-variant/30">
+<div class="mb-md">
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">Menu</h2>
+<p class="font-body-md text-body-md text-secondary">Browse Categories</p>
+</div>
+<nav class="flex flex-col gap-sm flex-1">
+<a class="text-on-surface-variant px-4 py-3 hover:bg-surface-container-highest transition-colors rounded-lg flex items-center gap-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">play_games</span>
+<span class="font-body-md text-body-md">Starters</span>
+</a>
+<a class="bg-primary-container text-on-primary-container font-bold rounded-lg px-4 py-3 flex items-center gap-sm shadow-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">flatware</span>
+<span class="font-body-md text-body-md">Mains</span>
+</a>
+<!-- Expanded Category Items (Simulated context) -->
+<div class="pl-xl flex flex-col gap-2 mt-2 border-l-2 border-surface-variant ml-4 relative">
+<div class="group relative flex items-center justify-between p-2 rounded-md hover:bg-surface-variant cursor-pointer transition-colors bg-surface-container-highest/50">
+<span class="font-body-md text-body-md text-on-surface">Truffle Pizza</span>
+<span class="font-label-md text-label-md text-primary">$24</span>
+<!-- "Tap to ask" tooltip hint -->
+<div class="absolute -right-2 top-1/2 -translate-y-1/2 translate-x-full opacity-0 group-hover:opacity-100 transition-opacity bg-inverse-surface text-inverse-on-surface px-2 py-1 rounded text-xs whitespace-nowrap pointer-events-none z-20 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">chat_bubble</span> Ask AI
+                        </div>
+</div>
+<div class="group relative flex items-center justify-between p-2 rounded-md hover:bg-surface-variant cursor-pointer transition-colors">
+<span class="font-body-md text-body-md text-on-surface">Margherita</span>
+<span class="font-label-md text-label-md text-primary">$18</span>
+</div>
+</div>
+<a class="text-on-surface-variant px-4 py-3 hover:bg-surface-container-highest transition-colors rounded-lg flex items-center gap-sm mt-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">icecream</span>
+<span class="font-body-md text-body-md">Desserts</span>
+</a>
+<a class="text-on-surface-variant px-4 py-3 hover:bg-surface-container-highest transition-colors rounded-lg flex items-center gap-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">local_bar</span>
+<span class="font-body-md text-body-md">Drinks</span>
+</a>
+<a class="text-on-surface-variant px-4 py-3 hover:bg-surface-container-highest transition-colors rounded-lg flex items-center gap-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">restaurant</span>
+<span class="font-body-md text-body-md">Sides</span>
+</a>
+</nav>
+<button class="mt-auto border-2 border-secondary text-secondary font-label-md text-label-md py-3 rounded-lg hover:bg-secondary-container transition-colors w-full bg-transparent flex justify-center items-center gap-sm">
+<span class="material-symbols-outlined">local_offer</span>
+                View Specials
+            </button>
+</aside>
+<!-- Main Chat Area -->
+<main class="flex-1 flex flex-col bg-surface relative h-full">
+<!-- Chat History Scrollable Area -->
+<div class="flex-1 overflow-y-auto p-margin-mobile md:p-margin-desktop flex flex-col gap-lg pb-32">
+<!-- Date Separator -->
+<div class="flex justify-center my-2">
+<span class="bg-surface-container-high text-on-surface-variant font-label-md text-[12px] px-3 py-1 rounded-full">Today, 12:42 PM</span>
+</div>
+<!-- User Message -->
+<div class="flex justify-end mb-[16px]">
+<div class="bg-primary text-on-primary rounded-2xl rounded-tr-sm p-md max-w-[85%] md:max-w-[70%] shadow-[0px_4px_20px_rgba(18,18,18,0.04)]">
+<p class="font-chat-text text-chat-text">I'd like a Truffle Pizza and a Diet Coke.</p>
+</div>
+</div>
+<!-- AI Message & Rich Card Group -->
+<div class="flex flex-col gap-[4px] mb-[16px] max-w-[90%] md:max-w-[80%]">
+<!-- AI Text -->
+<div class="flex gap-sm items-end">
+<div class="w-8 h-8 rounded-full bg-tertiary-container flex items-center justify-center flex-shrink-0 shadow-sm border border-surface-variant">
+<span class="material-symbols-outlined text-on-tertiary-container text-[18px]">support_agent</span>
+</div>
+<div class="bg-surface text-on-surface rounded-2xl rounded-bl-sm p-md border border-surface-variant shadow-[0px_4px_20px_rgba(18,18,18,0.04)]">
+<p class="font-chat-text text-chat-text text-secondary">Great choice! Our Truffle Pizza is a guest favorite. Would you like to make that a meal with a side of garlic bread?</p>
+</div>
+</div>
+<!-- AI Rich Card: Suggestion -->
+<div class="ml-10 bg-surface rounded-xl border border-surface-variant shadow-[0px_8px_30px_rgba(18,18,18,0.08)] overflow-hidden w-full max-w-sm mt-xs">
+<div class="flex h-24">
+<div class="w-1/3 bg-surface-dim relative">
+<img class="absolute inset-0 w-full h-full object-cover" data-alt="A warm, appetizing close-up food photography shot of golden, crispy garlic bread slices stacked casually on a rustic wooden board. The bread is generously coated in melted butter, green herbs, and subtle specks of garlic. Soft, natural light cascades from the side, enhancing the textured crust and soft interior, set against a blurred, airy bistro background. The overall aesthetic is inviting, clean, and high-quality, typical of modern hospitality menus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA19XO5J2StMflkfMQBOk14FCGS6YPGhj2KoU-O0Afwiw18Tocpf2Q21u0RuN9j-MKNuqDG_srSc4OJfMyVyeo3N_CkvWDBBfk_xAdF47KDHuEj2QHDGb1xdgp0_MsYRY1mPqJ2g0lDUD5ppcSCoUSSSJOY2mJCeCyKzJsVwB3SOqL5o3Lhtios-_8YZ1hK1krSzMO_AW7BRZCNr8CXLDBmp3VrWf979W8Eddbi26opEx4wivLTXjdudw"/>
+</div>
+<div class="w-2/3 p-3 flex flex-col justify-between">
+<div>
+<h4 class="font-headline-sm text-[16px] leading-tight font-bold text-on-surface">Garlic Bread</h4>
+<p class="font-label-md text-[12px] text-secondary mt-1">Toasted artisan sourdough, herb butter.</p>
+</div>
+<div class="flex justify-between items-center mt-2">
+<span class="font-headline-sm text-[14px] text-primary font-bold">+$6.00</span>
+<button class="bg-surface-container-high hover:bg-primary-container hover:text-on-primary-container text-primary font-label-md text-[12px] px-3 py-1.5 rounded-full transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">add</span> Add
+                                    </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- User Message -->
+<div class="flex justify-end mb-[16px]">
+<div class="bg-primary text-on-primary rounded-2xl rounded-tr-sm p-md max-w-[85%] md:max-w-[70%] shadow-[0px_4px_20px_rgba(18,18,18,0.04)]">
+<p class="font-chat-text text-chat-text">Yes, add the garlic bread.</p>
+</div>
+</div>
+<!-- AI Message & Summary Card Group -->
+<div class="flex flex-col gap-[4px] mb-[16px] max-w-[95%] md:max-w-[85%]">
+<!-- AI Text -->
+<div class="flex gap-sm items-end">
+<div class="w-8 h-8 rounded-full bg-tertiary-container flex items-center justify-center flex-shrink-0 shadow-sm border border-surface-variant">
+<span class="material-symbols-outlined text-on-tertiary-container text-[18px]">receipt_long</span>
+</div>
+<div class="bg-surface text-on-surface rounded-2xl rounded-bl-sm p-md border border-surface-variant shadow-[0px_4px_20px_rgba(18,18,18,0.04)]">
+<p class="font-chat-text text-chat-text text-secondary">Added! Here is your order summary ready for the kitchen.</p>
+</div>
+</div>
+<!-- AI Rich Card: Order Summary -->
+<div class="ml-10 bg-surface rounded-xl border border-primary/20 shadow-[0px_8px_30px_rgba(18,18,18,0.08)] overflow-hidden w-full mt-xs">
+<div class="bg-surface-container-low px-4 py-3 border-b border-surface-variant/50 flex justify-between items-center">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Order Summary</h3>
+<span class="bg-primary-container text-on-primary-container font-label-md text-[12px] px-2 py-1 rounded-md">Pending</span>
+</div>
+<div class="p-4 flex flex-col gap-3">
+<!-- Items -->
+<div class="flex justify-between items-start pb-2 border-b border-surface-variant/30 border-dashed">
+<div class="flex gap-2">
+<span class="font-label-md text-secondary mt-0.5">1x</span>
+<div>
+<p class="font-body-md text-on-surface font-semibold">Truffle Pizza</p>
+</div>
+</div>
+<span class="font-body-md text-on-surface">$24.00</span>
+</div>
+<div class="flex justify-between items-start pb-2 border-b border-surface-variant/30 border-dashed">
+<div class="flex gap-2">
+<span class="font-label-md text-secondary mt-0.5">1x</span>
+<div>
+<p class="font-body-md text-on-surface font-semibold">Diet Coke</p>
+</div>
+</div>
+<span class="font-body-md text-on-surface">$4.00</span>
+</div>
+<div class="flex justify-between items-start pb-2 border-b border-surface-variant/30 border-dashed">
+<div class="flex gap-2">
+<span class="font-label-md text-secondary mt-0.5">1x</span>
+<div>
+<p class="font-body-md text-on-surface font-semibold">Garlic Bread</p>
+</div>
+</div>
+<span class="font-body-md text-on-surface">$6.00</span>
+</div>
+<!-- Totals -->
+<div class="mt-2 flex flex-col gap-1">
+<div class="flex justify-between font-body-md text-secondary text-[14px]">
+<span>Subtotal</span>
+<span>$34.00</span>
+</div>
+<div class="flex justify-between font-body-md text-secondary text-[14px]">
+<span>Tax (8%)</span>
+<span>$2.72</span>
+</div>
+<div class="flex justify-between font-headline-sm text-headline-sm text-on-surface mt-2 pt-2 border-t border-surface-variant">
+<span>Total</span>
+<span class="text-primary">$36.72</span>
+</div>
+</div>
+</div>
+<div class="p-4 pt-0">
+<button class="w-full bg-primary hover:bg-surface-tint text-on-primary font-label-md text-label-md py-4 rounded-xl shadow-md transition-all active:scale-[0.98] flex justify-center items-center gap-2">
+<span class="material-symbols-outlined">send</span>
+                                Confirm &amp; Send to Kitchen
+                            </button>
+</div>
+</div>
+</div>
+<!-- Typing Indicator -->
+<div class="flex gap-sm items-end mb-4">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-secondary text-[16px]">more_horiz</span>
+</div>
+<div class="bg-surface text-on-surface rounded-2xl rounded-bl-sm px-4 py-3 border border-surface-variant shadow-[0px_4px_20px_rgba(18,18,18,0.04)] h-10 flex items-center">
+<div class="typing-indicator flex items-center h-full">
+<span></span><span></span><span></span>
+</div>
+</div>
+</div>
+</div>
+<!-- Fixed Bottom Input Area -->
+<div class="absolute bottom-0 w-full glass-nav p-margin-mobile md:p-lg border-t border-surface-variant/30 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] md:pb-lg">
+<!-- Floating Toast -->
+<div class="absolute -top-12 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-label-md text-[13px] px-4 py-2 rounded-full shadow-lg flex items-center gap-2 z-20 animate-[fade-in-up_0.3s_ease-out]">
+<span class="material-symbols-outlined text-[16px] text-primary-fixed-dim">check_circle</span>
+                    Added "Truffle Pizza" to message
+                </div>
+<div class="flex gap-sm items-end bg-surface-container-lowest border border-outline-variant focus-within:border-primary rounded-2xl shadow-sm p-1 transition-colors">
+<button class="p-3 text-secondary hover:text-primary transition-colors flex-shrink-0 rounded-xl hover:bg-surface-container">
+<span class="material-symbols-outlined">menu_book</span>
+</button>
+<textarea class="flex-1 bg-transparent border-none focus:ring-0 resize-none font-chat-text text-chat-text text-on-surface py-3.5 placeholder:text-secondary-fixed-dim min-h-[56px]" placeholder="Ask a question or place an order..." rows="1"></textarea>
+<button class="p-3 bg-primary text-on-primary rounded-xl hover:opacity-90 transition-opacity flex-shrink-0 shadow-md m-1 active:scale-95">
+<span class="material-symbols-outlined">arrow_upward</span>
+</button>
+</div>
+</div>
+</main>
+</div>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 flex justify-around items-center py-2 px-margin-mobile bg-surface/80 dark:bg-inverse-surface/80 backdrop-blur-xl shadow-lg rounded-t-xl border-t-0 pb-[calc(env(safe-area-inset-bottom,0px)+8px)]">
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-6 py-2 hover:bg-surface-container-high transition-colors active:scale-95 duration-200 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">forum</span>
+<span class="font-label-md text-[12px] mt-1">Chat</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed px-6 py-2 hover:bg-surface-container-high transition-colors active:scale-95 duration-200 transition-transform" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="font-label-md text-[12px] mt-1">My Order</span>
+</a>
+</nav>
+<style>
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translate(-50%, 10px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+    </style>
+</body></html>

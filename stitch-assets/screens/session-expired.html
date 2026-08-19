@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TableChat - Session Expired</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed-dim": "#ffb693",
+                        "surface-container": "#efeeea",
+                        "surface": "#fbf9f5",
+                        "tertiary": "#934b19",
+                        "surface-container-highest": "#e4e2de",
+                        "primary-container": "#ff6b00",
+                        "on-tertiary-fixed": "#321200",
+                        "on-background": "#1b1c1a",
+                        "surface-dim": "#dbdad6",
+                        "inverse-primary": "#ffb693",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed": "#351000",
+                        "inverse-surface": "#30312e",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-container": "#532300",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "on-secondary-fixed-variant": "#474646",
+                        "outline-variant": "#e2bfb0",
+                        "on-primary": "#ffffff",
+                        "background": "#fbf9f5",
+                        "on-surface-variant": "#5a4136",
+                        "on-tertiary": "#ffffff",
+                        "outline": "#8e7164",
+                        "secondary-container": "#e5e2e1",
+                        "primary-fixed": "#ffdbcc",
+                        "secondary-fixed": "#e5e2e1",
+                        "on-primary-container": "#572000",
+                        "on-surface": "#1b1c1a",
+                        "on-secondary-container": "#656464",
+                        "on-secondary": "#ffffff",
+                        "surface-container-high": "#eae8e4",
+                        "tertiary-fixed-dim": "#ffb68c",
+                        "surface-bright": "#fbf9f5",
+                        "inverse-on-surface": "#f2f0ed",
+                        "tertiary-fixed": "#ffdbc9",
+                        "error-container": "#ffdad6",
+                        "surface-tint": "#a04100",
+                        "primary": "#a04100",
+                        "surface-variant": "#e4e2de",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-container": "#da834d",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "surface-container-low": "#f5f3ef",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed-variant": "#7a3000",
+                        "secondary": "#5f5e5e",
+                        "on-tertiary-fixed-variant": "#753401"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "8px",
+                        "margin-desktop": "48px",
+                        "margin-mobile": "16px",
+                        "gutter": "16px",
+                        "lg": "24px",
+                        "sm": "12px",
+                        "xs": "4px",
+                        "xl": "32px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "chat-text": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["26px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "chat-text": ["15px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface h-screen w-screen overflow-hidden flex flex-col antialiased">
+<!-- TopNavBar (Shared Component) - Suppressed for transactional/error screen as per semantic shell mandate -->
+<!-- Main Content Canvas - Full screen overlay -->
+<main class="flex-1 w-full h-full flex items-center justify-center relative">
+<!-- Background Image with Overlay -->
+<div class="absolute inset-0 z-0" data-alt="A softly blurred, out-of-focus background of a warm, sun-drenched bistro interior. Wooden tables and soft lighting create an inviting atmosphere. The image uses a light-mode aesthetic with cream and amber tones, emphasizing a cozy, hospitable environment. The blur effect ensures the foreground UI elements will be highly legible." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDLtXrY_pVUf9i0N5yw6G0DcXNTKGpMDBY_Lo_Zlvjza_CM8cPBtIVzLfowBopNVWeFTNUGQX2QxYlbPTlNT2PAGiXkqd1IWNF6x7FCWwvdv-Xw7vx4ctaXORDUK2Dv4HzCAV-ZY4mHVM0XZQejHB1qiGI5D6cbtaUbLIcs2R7yDoLd2tShRsyuMiZaR5RI4AWckmz8MqpbxYsVl0pL_QS8sJAQr5afL5evvOWadc_2dcY28M6Bw2MPRQ')"></div>
+<div class="absolute inset-0 bg-on-background/60 backdrop-blur-md z-0"></div>
+<!-- Centered Card -->
+<div class="relative z-10 w-full max-w-[400px] mx-margin-mobile px-margin-mobile md:px-0">
+<div class="bg-surface rounded-[24px] p-lg md:p-xl shadow-[0px_8px_30px_rgba(18,18,18,0.08)] flex flex-col items-center text-center">
+<!-- Icon Area -->
+<div class="mb-lg relative w-24 h-24 flex items-center justify-center">
+<div class="absolute inset-0 bg-error-container rounded-full opacity-50 animate-pulse"></div>
+<div class="relative bg-surface rounded-full p-4 shadow-sm z-10">
+<span class="material-symbols-outlined text-[48px] text-error" style="font-variation-settings: 'FILL' 0;">qr_code_scanner</span>
+</div>
+<!-- Warning Badge -->
+<div class="absolute bottom-0 right-0 bg-error text-on-error rounded-full w-8 h-8 flex items-center justify-center border-2 border-surface z-20">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+</div>
+<!-- Text Content -->
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface mb-sm">
+                    Your session expired
+                </h1>
+<p class="font-body-md text-body-md text-on-surface-variant mb-xl">
+                    Please rescan the table QR code to start a new ordering session.
+                </p>
+<!-- Action Button -->
+<button class="w-full bg-primary text-on-primary font-label-md text-label-md py-4 rounded-full flex items-center justify-center gap-2 hover:scale-[0.98] transition-transform shadow-[0px_4px_20px_rgba(18,18,18,0.04)]">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">qr_code_2</span>
+                    Scan QR Code
+                </button>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Shared Component) - Suppressed for transactional/error screen as per semantic shell mandate -->
+</body></html>

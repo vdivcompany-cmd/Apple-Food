@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useSession } from "@/lib/context/SessionContext";
-import { apiClient, PublicMenuCategory } from "@/lib/api/client";
 
 interface SideNavBarProps {
   onSelectItem?: (item: { name: string; price: number; category: string; subcategory?: string; productId?: string }) => void;
@@ -13,51 +12,20 @@ interface SideNavBarProps {
 
 export function SideNavBar({ onSelectItem, onSelectCategory, isOpen = false, onClose }: SideNavBarProps) {
   const { session } = useSession();
-  const [categories, setCategories] = useState<PublicMenuCategory[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch real menu categories & products directly from the backend API
+  // Categories are instantly available from global SessionContext (no redundant refetching on route changes)
+  const categories = useMemo(() => session.publicMenu?.categories || [], [session.publicMenu?.categories]);
+  const isLoading = session.isLoading && categories.length === 0;
+  const error = session.error;
+
+  // Automatically expand the first category once categories are loaded
   useEffect(() => {
-    let isMounted = true;
-
-    async function loadBackendMenu() {
-      if (!session.tenantId) return;
-
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const res = await apiClient.getPublicMenu(session.tenantId);
-        if (res.success && res.data && isMounted) {
-          const loadedCategories = res.data.categories || [];
-          setCategories(loadedCategories);
-
-          // Automatically expand the first category once loaded
-          if (loadedCategories.length > 0) {
-            setExpandedCategories({ [loadedCategories[0].id]: true });
-          }
-        }
-      } catch (err: any) {
-        console.error("[SideNavBar] Failed to fetch menu from backend:", err);
-        if (isMounted) {
-          setError(err.message || "Failed to load menu from server");
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
+    if (categories.length > 0 && Object.keys(expandedCategories).length === 0) {
+      setExpandedCategories({ [categories[0].id]: true });
     }
-
-    loadBackendMenu();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [session.tenantId]);
+  }, [categories, expandedCategories]);
 
   const toggleCategory = (catId: string) => {
     setExpandedCategories((prev) => ({
@@ -281,7 +249,7 @@ export function SideNavBar({ onSelectItem, onSelectCategory, isOpen = false, onC
           </nav>
         )}
 
-        {/* Cloudinary Menu Document Link / CTA (Positioned in Flow with Bottom Padding) */}
+        {/* Cloudinary Menu Document Link / CTA */}
         <div className="flex-shrink-0 pt-2">
           <a
             href={menuImageUrl}

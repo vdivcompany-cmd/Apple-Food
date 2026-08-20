@@ -160,7 +160,33 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+// In-memory client cache for fast instant route switching without network refetching
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+const memoryCache = new Map<string, CacheEntry<any>>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache TTL
+
+export interface ExtendedRequestInit extends RequestInit {
+  useCache?: boolean;
+  ttlMs?: number;
+  forceRefresh?: boolean;
+}
+
+async function request<T>(endpoint: string, options: ExtendedRequestInit = {}): Promise<T> {
+  const isGet = !options.method || options.method.toUpperCase() === "GET";
+  const cacheKey = endpoint;
+
+  // 1. Check in-memory client cache for GET requests
+  if (isGet && options.useCache !== false && !options.forceRefresh) {
+    const cached = memoryCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < (options.ttlMs || CACHE_TTL_MS)) {
+      return cached.data as T;
+    }
+  }
+
   const url = `${API_BASE_URL}${endpoint}`;
   const headers = {
     "Content-Type": "application/json",
@@ -182,6 +208,11 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
         (json.errors && json.errors.length > 0 ? json.errors[0].message : null) ||
         `Request failed with status ${res.status}`;
       throw new ApiError(errorMsg, res.status, json);
+    }
+
+    // 2. Cache successful GET responses in memory
+    if (isGet && options.useCache !== false) {
+      memoryCache.set(cacheKey, { data: json, timestamp: Date.now() });
     }
 
     return json as T;
@@ -219,7 +250,8 @@ export const apiClient = {
    */
   async revalidateSession(chatId: string, channel: string = "web"): Promise<ApiResponse<SessionResolveResponse>> {
     return request<ApiResponse<SessionResolveResponse>>(
-      `/api/v1/chat-sessions/by-channel?channel=${encodeURIComponent(channel)}&channelUserId=${encodeURIComponent(chatId)}`
+      `/api/v1/chat-sessions/by-channel?channel=${encodeURIComponent(channel)}&channelUserId=${encodeURIComponent(chatId)}`,
+      { useCache: false }
     );
   },
 
@@ -254,17 +286,21 @@ export const apiClient = {
    * 5. Menu source documents (Cloudinary Hosted)
    * GET /api/v1/menu/source-documents/{tenantId}
    */
-  async getMenuSourceDocuments(tenantId: string): Promise<ApiResponse<MenuSourceDocument[]>> {
-    return request<ApiResponse<MenuSourceDocument[]>>(`/api/v1/menu/source-documents/${encodeURIComponent(tenantId)}`);
+  async getMenuSourceDocuments(tenantId: string, forceRefresh = false): Promise<ApiResponse<MenuSourceDocument[]>> {
+    return request<ApiResponse<MenuSourceDocument[]>>(
+      `/api/v1/menu/source-documents/${encodeURIComponent(tenantId)}`,
+      { forceRefresh, ttlMs: 10 * 60 * 1000 }
+    );
   },
 
   /**
    * 6. Branch info
    * GET /api/v1/tenants/{tenantId}/branches/{branchId}/info
    */
-  async getBranchInfo(tenantId: string, branchId: string): Promise<ApiResponse<BranchInfoData>> {
+  async getBranchInfo(tenantId: string, branchId: string, forceRefresh = false): Promise<ApiResponse<BranchInfoData>> {
     return request<ApiResponse<BranchInfoData>>(
-      `/api/v1/tenants/${encodeURIComponent(tenantId)}/branches/${encodeURIComponent(branchId)}/info`
+      `/api/v1/tenants/${encodeURIComponent(tenantId)}/branches/${encodeURIComponent(branchId)}/info`,
+      { forceRefresh, ttlMs: 10 * 60 * 1000 }
     );
   },
 
@@ -280,7 +316,8 @@ export const apiClient = {
     return request<ApiResponse<PlacedOrderData[]>>(
       `/api/v1/tables/${encodeURIComponent(tableId)}/history?tenantId=${encodeURIComponent(
         tenantId
-      )}&limit=${limit}&channel=DINE_IN`
+      )}&limit=${limit}&channel=DINE_IN`,
+      { useCache: false }
     );
   },
 
@@ -304,7 +341,8 @@ export const apiClient = {
    */
   async getOrderStatus(orderId: string, tenantId: string): Promise<ApiResponse<PlacedOrderData>> {
     return request<ApiResponse<PlacedOrderData>>(
-      `/api/v1/orders/${encodeURIComponent(orderId)}?tenantId=${encodeURIComponent(tenantId)}`
+      `/api/v1/orders/${encodeURIComponent(orderId)}?tenantId=${encodeURIComponent(tenantId)}`,
+      { useCache: false }
     );
   },
 
@@ -312,11 +350,24 @@ export const apiClient = {
    * 10. Get full menu catalog with categories & products
    * GET /api/v1/menu/catalog?tenantId={tenantId}
    */
-  async getPublicMenu(tenantId: string): Promise<ApiResponse<PublicMenuData>> {
-    return request<ApiResponse<PublicMenuData>>(`/api/v1/menu/catalog?tenantId=${encodeURIComponent(tenantId)}`);
+  async getPublicMenu(tenantId: string, forceRefresh = false): Promise<ApiResponse<PublicMenuData>> {
+    return request<ApiResponse<PublicMenuData>>(
+      `/api/v1/menu/catalog?tenantId=${encodeURIComponent(tenantId)}`,
+      { forceRefresh, ttlMs: 10 * 60 * 1000 }
+    );
   },
 
-  async getMenuCatalog(tenantId: string): Promise<ApiResponse<PublicMenuData>> {
-    return request<ApiResponse<PublicMenuData>>(`/api/v1/menu/catalog?tenantId=${encodeURIComponent(tenantId)}`);
+  async getMenuCatalog(tenantId: string, forceRefresh = false): Promise<ApiResponse<PublicMenuData>> {
+    return request<ApiResponse<PublicMenuData>>(
+      `/api/v1/menu/catalog?tenantId=${encodeURIComponent(tenantId)}`,
+      { forceRefresh, ttlMs: 10 * 60 * 1000 }
+    );
+  },
+
+  /**
+   * Clear in-memory client cache
+   */
+  clearCache() {
+    memoryCache.clear();
   },
 };

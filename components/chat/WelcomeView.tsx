@@ -10,13 +10,18 @@ interface WelcomeViewProps {
   onReorder?: () => void;
 }
 
-export function WelcomeView({ onSelectPrompt, onViewMenu, onReorder }: WelcomeViewProps) {
+export function WelcomeView({
+  onSelectPrompt,
+  onViewMenu,
+  onReorder,
+}: WelcomeViewProps) {
   const { session } = useSession();
   const { orderHistory, reorderLastOrder } = useOrder();
   const [showMenuDocModal, setShowMenuDocModal] = useState(false);
   const [reorderLoading, setReorderLoading] = useState(false);
 
-  const menuDoc = session.menuDocuments.length > 0 ? session.menuDocuments[0] : null;
+  const menuDoc =
+    session.menuDocuments.length > 0 ? session.menuDocuments[0] : null;
   const lastOrder = orderHistory.length > 0 ? orderHistory[0] : null;
 
   const handleReorderClick = async () => {
@@ -36,17 +41,23 @@ export function WelcomeView({ onSelectPrompt, onViewMenu, onReorder }: WelcomeVi
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 md:p-10 flex flex-col items-center justify-center">
+    <div className="flex-1 overflow-y-auto p-4 mt-20 md:p-10 flex flex-col items-center justify-center">
       <div className="max-w-2xl w-full text-center space-y-6">
         {/* Animated Greeting Icon */}
         <div className="inline-flex items-center justify-center w-20 h-20 bg-primary-fixed rounded-full mb-1 shadow-card-soft border border-primary/20 animate-bounce">
-          <span className="material-symbols-outlined text-4xl text-primary">waving_hand</span>
+          <span className="material-symbols-outlined text-4xl text-primary">
+            waving_hand
+          </span>
         </div>
 
         {/* Headline */}
         <div>
           <h1 className="text-3xl md:text-4xl font-extrabold text-on-surface tracking-tight">
-            Welcome to <span className="text-primary-container">{session.restaurantName || "Versai"}</span>!
+            Welcome to{" "}
+            <span className="text-primary-container">
+              {session.restaurantName || "Versai"}
+            </span>
+            !
           </h1>
           <p className="text-xs md:text-sm font-semibold text-primary mt-1">
             {session.branchName} · Table {session.tableNumber || "10"}
@@ -54,7 +65,8 @@ export function WelcomeView({ onSelectPrompt, onViewMenu, onReorder }: WelcomeVi
         </div>
 
         <p className="text-on-surface-variant text-sm md:text-base max-w-lg mx-auto font-normal leading-relaxed">
-          We&apos;re delighted to serve you. How can I help get your dining experience started today?
+          We&apos;re delighted to serve you. How can I help get your dining
+          experience started today?
         </p>
 
         {/* Action Cards Grid */}
@@ -66,7 +78,9 @@ export function WelcomeView({ onSelectPrompt, onViewMenu, onReorder }: WelcomeVi
                 setShowMenuDocModal(true);
               } else {
                 onViewMenu?.();
-                onSelectPrompt?.("Can you show me the full menu and recommend popular dishes?");
+                onSelectPrompt?.(
+                  "Can you show me the full menu and recommend popular dishes?",
+                );
               }
             }}
             className="flex flex-col items-center justify-center p-6 bg-surface-container-lowest rounded-2xl shadow-card-soft hover:scale-[0.98] transition-all border border-outline-variant/30 hover:border-primary-container group cursor-pointer text-center"
@@ -76,9 +90,13 @@ export function WelcomeView({ onSelectPrompt, onViewMenu, onReorder }: WelcomeVi
                 restaurant_menu
               </span>
             </div>
-            <span className="font-bold text-base text-on-surface">View Menu</span>
+            <span className="font-bold text-base text-on-surface">
+              View Menu
+            </span>
             <span className="text-xs text-on-surface-variant mt-1">
-              {menuDoc ? "View full restaurant menu document (Cloudinary)" : "Browse chef recommendations & items"}
+              {menuDoc
+                ? "View full restaurant menu document (Cloudinary)"
+                : "Browse chef recommendations & items"}
             </span>
           </button>
 
@@ -134,8 +152,12 @@ export function WelcomeView({ onSelectPrompt, onViewMenu, onReorder }: WelcomeVi
           <div className="bg-surface rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-surface-variant">
             <div className="p-4 border-b border-surface-variant flex justify-between items-center bg-surface-container">
               <div>
-                <h3 className="font-bold text-base text-on-surface">{session.restaurantName} Official Menu</h3>
-                <p className="text-xs text-secondary">Cloudinary Source Document</p>
+                <h3 className="font-bold text-base text-on-surface">
+                  {session.restaurantName} Official Menu
+                </h3>
+                <p className="text-xs text-secondary">
+                  Cloudinary Source Document
+                </p>
               </div>
               <button
                 onClick={() => setShowMenuDocModal(false)}
@@ -160,12 +182,16 @@ export function WelcomeView({ onSelectPrompt, onViewMenu, onReorder }: WelcomeVi
                 className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
               >
                 <span>Open in full resolution</span>
-                <span className="material-symbols-outlined text-sm">open_in_new</span>
+                <span className="material-symbols-outlined text-sm">
+                  open_in_new
+                </span>
               </a>
               <button
                 onClick={() => {
                   setShowMenuDocModal(false);
-                  onSelectPrompt?.("Can you recommend something from this menu?");
+                  onSelectPrompt?.(
+                    "Can you recommend something from this menu?",
+                  );
                 }}
                 className="px-4 py-2 bg-primary-container text-white rounded-xl text-xs font-bold shadow-sm"
               >

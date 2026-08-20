@@ -15,13 +15,15 @@ export interface ApiResponse<T = any> {
 }
 
 export interface SessionResolveResponse {
+  chatId: string;
   tenantId: string;
   branchId: string;
   tableId: string;
-  tableNumber: string;
+  tableNumber: string | number;
   sessionId: string;
   tableSessionId?: string;
   channel?: string;
+  startedAt?: number;
 }
 
 export interface TableContextData {
@@ -29,7 +31,7 @@ export interface TableContextData {
   branchId: string;
   tableId: string;
   tableSessionId: string;
-  tableNumber?: string;
+  tableNumber?: string | number;
 }
 
 export interface BranchInfoData {
@@ -170,6 +172,11 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     const json = await res.json().catch(() => ({}));
 
     if (!res.ok) {
+      if (res.status === 403 || res.status === 401) {
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("tablechat:session-expired"));
+        }
+      }
       const errorMsg =
         json.message ||
         (json.errors && json.errors.length > 0 ? json.errors[0].message : null) ||
@@ -188,7 +195,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
 export const apiClient = {
   /**
-   * 1. Resolve/create session
+   * 1. Resolve/create session (server-minted chatId)
    * POST /api/v1/chat-sessions/resolve
    */
   async resolveSession(params: {
@@ -201,33 +208,27 @@ export const apiClient = {
       body: JSON.stringify({
         token: params.token,
         channel: params.channel || "web",
-        channelUserId: params.channelUserId,
+        ...(params.channelUserId ? { channelUserId: params.channelUserId } : {}),
       }),
     });
   },
 
   /**
-   * 2. Get session context
+   * 2. Revalidate session by channel and chatId
+   * GET /api/v1/chat-sessions/by-channel?channel={channel}&channelUserId={chatId}
+   */
+  async revalidateSession(chatId: string, channel: string = "web"): Promise<ApiResponse<SessionResolveResponse>> {
+    return request<ApiResponse<SessionResolveResponse>>(
+      `/api/v1/chat-sessions/by-channel?channel=${encodeURIComponent(channel)}&channelUserId=${encodeURIComponent(chatId)}`
+    );
+  },
+
+  /**
+   * 3. Get session context
    * GET /api/v1/chat-sessions/context/{chatId}
    */
   async getSessionContext(chatId: string): Promise<ApiResponse<TableContextData>> {
     return request<ApiResponse<TableContextData>>(`/api/v1/chat-sessions/context/${encodeURIComponent(chatId)}`);
-  },
-
-  /**
-   * 3. Save table session
-   * POST /api/v1/chat-sessions/save-table
-   */
-  async saveTableSession(payload: {
-    chatId: string;
-    tableId: string;
-    tenantId: string;
-    tableSessionId: string;
-  }): Promise<ApiResponse<{ saved: boolean }>> {
-    return request<ApiResponse<{ saved: boolean }>>("/api/v1/chat-sessions/save-table", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
   },
 
   /**
@@ -308,10 +309,14 @@ export const apiClient = {
   },
 
   /**
-   * 10. Get full public menu with categories & products
-   * GET /api/v1/menu?tenantId={tenantId}
+   * 10. Get full menu catalog with categories & products
+   * GET /api/v1/menu/catalog?tenantId={tenantId}
    */
   async getPublicMenu(tenantId: string): Promise<ApiResponse<PublicMenuData>> {
-    return request<ApiResponse<PublicMenuData>>(`/api/v1/menu?tenantId=${encodeURIComponent(tenantId)}`);
+    return request<ApiResponse<PublicMenuData>>(`/api/v1/menu/catalog?tenantId=${encodeURIComponent(tenantId)}`);
+  },
+
+  async getMenuCatalog(tenantId: string): Promise<ApiResponse<PublicMenuData>> {
+    return request<ApiResponse<PublicMenuData>>(`/api/v1/menu/catalog?tenantId=${encodeURIComponent(tenantId)}`);
   },
 };

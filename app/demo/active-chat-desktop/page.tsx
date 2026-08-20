@@ -29,6 +29,7 @@ const initialRealChatMessages: ChatMessage[] = [
 export default function ActiveChatDesktopDemoPage() {
   const [messages, setMessages] = useState<ChatMessage[]>(initialRealChatMessages);
   const [isTyping, setIsTyping] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const handleSend = (text: string) => {
     const userMsg: ChatMessage = {
@@ -73,10 +74,17 @@ export default function ActiveChatDesktopDemoPage() {
         <span className="font-mono text-[11px] opacity-80">Tenant: 6a85e588d0b508058fc5008c</span>
       </div>
 
-      <Header />
+      <Header
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        isSidebarOpen={isSidebarOpen}
+      />
 
-      <div className="flex flex-1 h-[calc(100vh-5.5rem)]">
-        <SideNavBar onSelectItem={handleSidebarItemSelect} />
+      <div className="flex flex-1 h-[calc(100vh-5.5rem)] relative">
+        <SideNavBar
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          onSelectItem={handleSidebarItemSelect}
+        />
 
         <main className="flex-1 ml-0 md:ml-80 flex flex-col h-full bg-surface relative overflow-hidden">
           <ActiveChatView messages={messages} isTyping={isTyping} />

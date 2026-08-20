@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Header, SideNavBar } from "@/components/layout";
 import { WelcomeView, ActiveChatView, ChatInputBar } from "@/components/chat";
 import { useChat } from "@/lib/context/ChatContext";
@@ -9,22 +9,35 @@ import { useSession } from "@/lib/context/SessionContext";
 export default function HomePage() {
   const { messages, sendMessage, isTyping } = useChat();
   const { session } = useSession();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // If only initial bot message exists and no user message yet, show Welcome Landing
   const hasUserStartedChat = messages.some((m) => m.sender === "user");
 
-  const handleSidebarItemClick = (item: { name: string; price: number; category: string; productId?: string }) => {
-    sendMessage(`عايز أسأل عن صنف ${item.name} (${item.price} ${session.currency}) من قسم ${item.category}، وممكن أطلبه للطاولة؟`);
+  const handleSidebarItemClick = (item: {
+    name: string;
+    price: number;
+    category: string;
+    productId?: string;
+  }) => {
+    sendMessage(
+      `عايز أسأل عن صنف ${item.name} (${item.price} ${session.currency}) من قسم ${item.category}، وممكن أطلبه للطاولة؟`,
+    );
   };
 
   return (
     <div className="h-full min-h-screen bg-background text-on-surface flex flex-col antialiased">
-      {/* Top Header */}
-      <Header />
+      {/* Top Header with Mobile Sidebar Toggle */}
+      <Header
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        isSidebarOpen={isSidebarOpen}
+      />
 
-      <div className="flex flex-1 h-[calc(100vh-4rem)]">
+      <div className="flex flex-1 h-[calc(100vh-4rem)] relative">
         {/* Multi-level Live Menu Side Navigator */}
         <SideNavBar
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
           onSelectItem={handleSidebarItemClick}
           onSelectCategory={(cat) => console.log(`Selected category: ${cat}`)}
         />
@@ -34,8 +47,14 @@ export default function HomePage() {
           {!hasUserStartedChat ? (
             <WelcomeView
               onSelectPrompt={(prompt) => sendMessage(prompt)}
-              onViewMenu={() => sendMessage("ممكن ترشحلي أحسن الأصناف والبيتزا الموجودة في المنيو؟")}
-              onReorder={() => sendMessage("إيه كان آخر أوردر تم طلبه على الطاولة دي؟")}
+              onViewMenu={() =>
+                sendMessage(
+                  "ممكن ترشحلي أحسن الأصناف والبيتزا الموجودة في المنيو؟",
+                )
+              }
+              onReorder={() =>
+                sendMessage("إيه كان آخر أوردر تم طلبه على الطاولة دي؟")
+              }
             />
           ) : (
             <ActiveChatView messages={messages} isTyping={isTyping} />

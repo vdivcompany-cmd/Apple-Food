@@ -69,8 +69,9 @@ const config: Config = {
         "brand-surface": "#FFFFFF",
       },
       fontFamily: {
-        sans: ["'Plus Jakarta Sans'", "sans-serif"],
-        display: ["'Plus Jakarta Sans'", "sans-serif"],
+        sans: ["'Cairo'", "'Plus Jakarta Sans'", "sans-serif"],
+        display: ["'Alexandria'", "'Cairo'", "'Plus Jakarta Sans'", "sans-serif"],
+        arabic: ["'Cairo'", "'Alexandria'", "sans-serif"],
       },
       borderRadius: {
         "sm": "0.25rem",

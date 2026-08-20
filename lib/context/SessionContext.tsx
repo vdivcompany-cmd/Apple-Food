@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { apiClient, BranchInfoData, MenuSourceDocument, PublicMenuData } from "@/lib/api/client";
 
 export interface SessionState {
@@ -23,6 +23,7 @@ export interface SessionState {
 
 const DEFAULT_TENANT_ID = process.env.NEXT_PUBLIC_DEFAULT_TENANT_ID || "6a85e588d0b508058fc5008c";
 const DEFAULT_BRANCH_ID = process.env.NEXT_PUBLIC_DEFAULT_BRANCH_ID || "6a85e588d0b508058fc5008e";
+const SESSION_STORAGE_KEY = "tablechat_session_state";
 
 interface SessionContextType {
   session: SessionState;
@@ -35,16 +36,6 @@ interface SessionContextType {
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
-
-function getOrCreateChatId(): string {
-  if (typeof window === "undefined") return "browser-ssr-id";
-  let id = localStorage.getItem("tablechat_client_chat_id");
-  if (!id) {
-    id = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `web-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    localStorage.setItem("tablechat_client_chat_id", id);
-  }
-  return id;
-}
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<SessionState>({
@@ -65,70 +56,126 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     error: null,
   });
 
-  useEffect(() => {
-    const chatId = getOrCreateChatId();
-    setSession((prev) => ({ ...prev, chatId }));
+  const expireSession = useCallback(() => {
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    }
+    setSession((prev) => ({ ...prev, isExpired: true }));
+  }, []);
 
-    // Check URL parameters for QR scan token or table
+  const resetSession = useCallback(() => {
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    }
+    setSession((prev) => ({
+      ...prev,
+      chatId: "",
+      tableSessionId: "",
+      isExpired: false,
+      error: null,
+    }));
+  }, []);
+
+  // Global session expiration listener
+  useEffect(() => {
+    const handleExpiredEvent = () => expireSession();
+    if (typeof window !== "undefined") {
+      window.addEventListener("tablechat:session-expired", handleExpiredEvent);
+      return () => window.removeEventListener("tablechat:session-expired", handleExpiredEvent);
+    }
+  }, [expireSession]);
+
+  useEffect(() => {
+    // Check URL parameters for QR scan token (?token=..., ?s=..., ?t=...)
     const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
-    const token = urlParams?.get("token");
+    const token = urlParams?.get("token") || urlParams?.get("s") || urlParams?.get("t") || urlParams?.get("tableToken");
 
     async function initSession() {
       try {
-        const activeTenantId = DEFAULT_TENANT_ID;
+        let activeTenantId = DEFAULT_TENANT_ID;
+        let activeBranchId = DEFAULT_BRANCH_ID;
+        let activeChatId = "";
+        let activeTableId = "";
+        let activeTableSessionId = "";
+        let activeTableNumber = "10";
 
-        // 1. If QR token provided, resolve it
+        // 1. If customer just landed with a QR scan token
         if (token) {
-          const res = await apiClient.resolveSession({
-            token,
-            channel: "web",
-            channelUserId: chatId,
-          }).catch((err) => {
-            console.warn("[SessionProvider] resolveSession warning:", err);
-            return null;
-          });
+          try {
+            const res = await apiClient.resolveSession({
+              token,
+              channel: "web",
+            });
 
-          if (res && res.success && res.data) {
-            const data = res.data;
-            const newTableSessionId = data.tableSessionId || data.sessionId;
+            if (res && res.success && res.data) {
+              const data = res.data;
+              activeChatId = data.chatId;
+              activeTenantId = data.tenantId || activeTenantId;
+              activeBranchId = data.branchId || activeBranchId;
+              activeTableId = data.tableId || "";
+              activeTableSessionId = data.tableSessionId || data.sessionId || "";
+              activeTableNumber = String(data.tableNumber || "10");
 
-            await apiClient.saveTableSession({
-              chatId,
-              tableId: data.tableId,
-              tenantId: data.tenantId,
-              tableSessionId: newTableSessionId,
-            }).catch(console.warn);
+              // Save in tab-scoped sessionStorage (never in permanent localStorage)
+              if (typeof window !== "undefined") {
+                sessionStorage.setItem(
+                  SESSION_STORAGE_KEY,
+                  JSON.stringify({
+                    chatId: activeChatId,
+                    tenantId: activeTenantId,
+                    branchId: activeBranchId,
+                    tableId: activeTableId,
+                    tableSessionId: activeTableSessionId,
+                    tableNumber: activeTableNumber,
+                  })
+                );
 
-            setSession((prev) => ({
-              ...prev,
-              tenantId: data.tenantId,
-              branchId: data.branchId,
-              tableId: data.tableId,
-              tableSessionId: newTableSessionId,
-              tableNumber: data.tableNumber || prev.tableNumber,
-              isExpired: false,
-            }));
+                // Strip token from browser URL cleanly
+                window.history.replaceState({}, "", window.location.pathname);
+              }
+            }
+          } catch (err: any) {
+            console.warn("[SessionProvider] resolveSession error:", err);
           }
-        } else {
-          // 2. Try fetching existing bound table context for this browser chatId
-          const ctxRes = await apiClient.getSessionContext(chatId).catch(() => null);
-          if (ctxRes && ctxRes.success && ctxRes.data) {
-            setSession((prev) => ({
-              ...prev,
-              tenantId: ctxRes.data?.tenantId || prev.tenantId,
-              branchId: ctxRes.data?.branchId || prev.branchId,
-              tableId: ctxRes.data?.tableId || prev.tableId,
-              tableSessionId: ctxRes.data?.tableSessionId || prev.tableSessionId,
-              tableNumber: ctxRes.data?.tableNumber || prev.tableNumber,
-            }));
+        } else if (typeof window !== "undefined") {
+          // 2. Restore active tab session from sessionStorage if present
+          const savedJson = sessionStorage.getItem(SESSION_STORAGE_KEY);
+          if (savedJson) {
+            try {
+              const saved = JSON.parse(savedJson);
+              if (saved.chatId && saved.tenantId) {
+                activeChatId = saved.chatId;
+                activeTenantId = saved.tenantId;
+                activeBranchId = saved.branchId || activeBranchId;
+                activeTableId = saved.tableId || "";
+                activeTableSessionId = saved.tableSessionId || "";
+                activeTableNumber = saved.tableNumber || "10";
+
+                // Revalidate with backend in background
+                apiClient.revalidateSession(saved.chatId, "web").then((rev) => {
+                  if (rev && rev.success && rev.data) {
+                    setSession((prev) => ({
+                      ...prev,
+                      tableSessionId: rev.data?.sessionId || prev.tableSessionId,
+                      tableNumber: String(rev.data?.tableNumber || prev.tableNumber),
+                    }));
+                  }
+                }).catch(() => {
+                  // If backend says session is dead, trigger expiry
+                  expireSession();
+                });
+              }
+            } catch {
+              sessionStorage.removeItem(SESSION_STORAGE_KEY);
+            }
           }
         }
 
-        // 3. Load real public menu and Cloudinary menu documents from backend
+        // 3. Load live public menu catalog, Cloudinary documents, and branch info
         const [menuDocsRes, publicMenuRes, branchRes] = await Promise.allSettled([
           apiClient.getMenuSourceDocuments(activeTenantId),
           apiClient.getPublicMenu(activeTenantId),
-          apiClient.getBranchInfo(activeTenantId, DEFAULT_BRANCH_ID),
+          apiClient.getBranchInfo(activeTenantId, activeBranchId),
         ]);
 
         let menuDocs: MenuSourceDocument[] = [];
@@ -149,6 +196,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
         setSession((prev) => ({
           ...prev,
+          chatId: activeChatId || prev.chatId,
+          tenantId: activeTenantId,
+          branchId: activeBranchId,
+          tableId: activeTableId || prev.tableId,
+          tableSessionId: activeTableSessionId || prev.tableSessionId,
+          tableNumber: activeTableNumber,
           menuDocuments: menuDocs,
           publicMenu: publicMenuData,
           branchInfo: branchData,
@@ -168,37 +221,44 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
 
     initSession();
-  }, []);
+  }, [expireSession]);
 
   const resolveQrToken = async (token: string): Promise<boolean> => {
     try {
       setSession((prev) => ({ ...prev, isLoading: true, error: null }));
-      const chatId = session.chatId || getOrCreateChatId();
 
       const res = await apiClient.resolveSession({
         token,
         channel: "web",
-        channelUserId: chatId,
       });
 
       if (res.success && res.data) {
         const data = res.data;
         const newTableSessionId = data.tableSessionId || data.sessionId;
 
-        await apiClient.saveTableSession({
-          chatId,
-          tableId: data.tableId,
-          tenantId: data.tenantId,
-          tableSessionId: newTableSessionId,
-        }).catch(console.warn);
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem(
+            SESSION_STORAGE_KEY,
+            JSON.stringify({
+              chatId: data.chatId,
+              tenantId: data.tenantId,
+              branchId: data.branchId,
+              tableId: data.tableId,
+              tableSessionId: newTableSessionId,
+              tableNumber: String(data.tableNumber || "10"),
+            })
+          );
+          window.history.replaceState({}, "", window.location.pathname);
+        }
 
         setSession((prev) => ({
           ...prev,
+          chatId: data.chatId,
           tenantId: data.tenantId,
           branchId: data.branchId,
           tableId: data.tableId,
           tableSessionId: newTableSessionId,
-          tableNumber: data.tableNumber || prev.tableNumber,
+          tableNumber: String(data.tableNumber || prev.tableNumber),
           isExpired: false,
           isLoading: false,
         }));
@@ -231,14 +291,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.warn("[SessionProvider] Refresh public menu error:", err);
     }
-  };
-
-  const expireSession = () => {
-    setSession((prev) => ({ ...prev, isExpired: true }));
-  };
-
-  const resetSession = () => {
-    setSession((prev) => ({ ...prev, isExpired: false, error: null }));
   };
 
   return (

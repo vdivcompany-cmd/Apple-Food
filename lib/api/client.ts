@@ -53,10 +53,46 @@ export interface BranchInfoData {
 export interface MenuSourceDocument {
   url: string;
   publicId?: string;
-  mimeType?: string;
-  title?: string;
-  size?: number;
+  fileType?: string;
+  originalFilename?: string;
   uploadedAt?: string;
+}
+
+export interface PublicMenuVariant {
+  _id: string;
+  name: string;
+  minSelect?: number;
+  maxSelect?: number;
+  options?: Array<{
+    name: string;
+    price: number;
+    additionalPrice?: number;
+  }>;
+}
+
+export interface PublicMenuProduct {
+  _id: string;
+  name: string;
+  description?: string;
+  basePrice: number;
+  categoryId: string;
+  categoryName?: string;
+  isAvailable?: boolean;
+  imageUrl?: string;
+  variants?: PublicMenuVariant[];
+  variantIds?: PublicMenuVariant[];
+}
+
+export interface PublicMenuCategory {
+  id: string;
+  name: string;
+  displayOrder?: number;
+  products: PublicMenuProduct[];
+}
+
+export interface PublicMenuData {
+  tenantId: string;
+  categories: PublicMenuCategory[];
 }
 
 export interface SearchedProduct {
@@ -214,7 +250,7 @@ export const apiClient = {
   },
 
   /**
-   * 5. Menu source documents
+   * 5. Menu source documents (Cloudinary Hosted)
    * GET /api/v1/menu/source-documents/{tenantId}
    */
   async getMenuSourceDocuments(tenantId: string): Promise<ApiResponse<MenuSourceDocument[]>> {
@@ -269,5 +305,13 @@ export const apiClient = {
     return request<ApiResponse<PlacedOrderData>>(
       `/api/v1/orders/${encodeURIComponent(orderId)}?tenantId=${encodeURIComponent(tenantId)}`
     );
+  },
+
+  /**
+   * 10. Get full public menu with categories & products
+   * GET /api/v1/menu?tenantId={tenantId}
+   */
+  async getPublicMenu(tenantId: string): Promise<ApiResponse<PublicMenuData>> {
+    return request<ApiResponse<PublicMenuData>>(`/api/v1/menu?tenantId=${encodeURIComponent(tenantId)}`);
   },
 };

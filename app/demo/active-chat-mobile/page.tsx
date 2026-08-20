@@ -5,29 +5,29 @@ import Link from "next/link";
 import { ActiveChatView, ChatInputBar } from "@/components/chat";
 import { ChatMessage } from "@/types";
 
-const mobileChatMessages: ChatMessage[] = [
+const mobileRealChatMessages: ChatMessage[] = [
   {
     id: "m-1",
     sender: "ai",
-    text: "Welcome to Table 10! 👋 I'm your AI waiter. What would you like to order today?",
+    text: "أهلاً بيك في بيتزا وكريب توفيق (طاولة 10) 👋! أنا ResBot الويتر الذكي، تحب تطلب إيه النهاردة؟",
     timestamp: "12:30 PM",
   },
   {
     id: "m-2",
     sender: "user",
-    text: "Can I get 2 Sea Bass and 1 Sparkling Cooler?",
+    text: "عايز 1 بيتزا جامايكا و 1 برجاريزا تشيكن سبايسي",
     timestamp: "12:31 PM",
   },
   {
     id: "m-3",
     sender: "ai",
-    text: "✅ Order noted! 2x Grilled Sea Bass ($57.00) and 1x Sparkling Citrus Cooler ($6.50). Total: $63.50. Sent straight to the kitchen 🍽️",
+    text: "✅ سجلت طلبك:\n• 1x بيتزا جامايكا (140 EGP)\n• 1x برجاريزا تشيكن سبايسي (100 EGP)\n\nالإجمالي: 240 EGP. تم إرسال الطلب للمطبخ 🍽️",
     timestamp: "12:31 PM",
   },
 ];
 
 export default function ActiveChatMobileDemoPage() {
-  const [messages, setMessages] = useState<ChatMessage[]>(mobileChatMessages);
+  const [messages, setMessages] = useState<ChatMessage[]>(mobileRealChatMessages);
   const [isTyping, setIsTyping] = useState(false);
 
   const handleSend = (text: string) => {
@@ -44,19 +44,19 @@ export default function ActiveChatMobileDemoPage() {
       const aiReply: ChatMessage = {
         id: `msg-${Date.now() + 1}`,
         sender: "ai",
-        text: `Understood! Added "${text}" to your request. Let me know if you need anything else!`,
+        text: `تمام يا فندم! أضفت "${text}" لطلبك. تحب تزود أي حاجة تانية؟`,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
       setMessages((prev) => [...prev, aiReply]);
       setIsTyping(false);
-    }, 1000);
+    }, 800);
   };
 
   return (
     <div className="min-h-screen bg-surface-container-high flex flex-col items-center justify-center p-0 sm:p-4">
       {/* Top Banner */}
       <div className="w-full max-w-sm bg-primary text-white text-xs px-3 py-1.5 flex justify-between items-center rounded-t-xl mb-0 sm:mb-2">
-        <span>📱 Screen #4: <strong>Active Chat (Mobile)</strong> [390x884]</span>
+        <span>📱 Screen #4: <strong>Active Chat (Mobile)</strong> — Real Tawfik Menu</span>
       </div>
 
       {/* Mobile Device Frame */}
@@ -68,15 +68,15 @@ export default function ActiveChatMobileDemoPage() {
               🤖
             </div>
             <div>
-              <h2 className="font-bold text-sm text-on-surface leading-tight">ResBot Waiter</h2>
-              <p className="text-[10px] text-primary-container font-semibold">Table 10 · Live</p>
+              <h2 className="font-bold text-xs md:text-sm text-on-surface leading-tight">ResBot (توفيق)</h2>
+              <p className="text-[10px] text-primary-container font-semibold">طاولة 10 · مباشر</p>
             </div>
           </div>
           <Link
             href="/demo/order-tracking-mobile"
             className="px-3 py-1.5 bg-surface-container-highest text-on-surface rounded-full text-xs font-bold flex items-center gap-1 hover:bg-primary-fixed hover:text-primary transition-colors"
           >
-            <span>Orders</span>
+            <span>طلباتي</span>
             <span className="material-symbols-outlined text-sm">receipt</span>
           </Link>
         </header>

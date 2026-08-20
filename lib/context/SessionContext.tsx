@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { apiClient, BranchInfoData, MenuSourceDocument } from "@/lib/api/client";
+import { apiClient, BranchInfoData, MenuSourceDocument, PublicMenuData } from "@/lib/api/client";
 
 export interface SessionState {
   chatId: string;
@@ -16,12 +16,13 @@ export interface SessionState {
   currency: string;
   branchInfo: BranchInfoData | null;
   menuDocuments: MenuSourceDocument[];
+  publicMenu: PublicMenuData | null;
   isLoading: boolean;
   error: string | null;
 }
 
-const DEFAULT_TENANT_ID = process.env.NEXT_PUBLIC_DEFAULT_TENANT_ID || "6a7602ce3fe906bfc78c3b15";
-const DEFAULT_BRANCH_ID = process.env.NEXT_PUBLIC_DEFAULT_BRANCH_ID || "6a7602d13fe906bfc78c3b17";
+const DEFAULT_TENANT_ID = process.env.NEXT_PUBLIC_DEFAULT_TENANT_ID || "6a85e588d0b508058fc5008c";
+const DEFAULT_BRANCH_ID = process.env.NEXT_PUBLIC_DEFAULT_BRANCH_ID || "6a85e588d0b508058fc5008e";
 
 interface SessionContextType {
   session: SessionState;
@@ -30,6 +31,7 @@ interface SessionContextType {
   expireSession: () => void;
   resetSession: () => void;
   refreshMenuDocuments: () => Promise<void>;
+  refreshPublicMenu: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -53,11 +55,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     tableSessionId: "",
     tableNumber: "10",
     isExpired: false,
-    restaurantName: "Versai",
-    branchName: "Cairo Branch",
+    restaurantName: "بيتزا وكريب توفيق",
+    branchName: "الفرع الرئيسي",
     currency: "EGP",
     branchInfo: null,
     menuDocuments: [],
+    publicMenu: null,
     isLoading: true,
     error: null,
   });
@@ -72,25 +75,29 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
     async function initSession() {
       try {
+        const activeTenantId = DEFAULT_TENANT_ID;
+
         // 1. If QR token provided, resolve it
         if (token) {
           const res = await apiClient.resolveSession({
             token,
             channel: "web",
             channelUserId: chatId,
+          }).catch((err) => {
+            console.warn("[SessionProvider] resolveSession warning:", err);
+            return null;
           });
 
-          if (res.success && res.data) {
+          if (res && res.success && res.data) {
             const data = res.data;
             const newTableSessionId = data.tableSessionId || data.sessionId;
 
-            // Also save table binding
             await apiClient.saveTableSession({
               chatId,
               tableId: data.tableId,
               tenantId: data.tenantId,
               tableSessionId: newTableSessionId,
-            }).catch((err) => console.warn("[SessionProvider] saveTableSession warning:", err));
+            }).catch(console.warn);
 
             setSession((prev) => ({
               ...prev,
@@ -117,30 +124,37 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        // 3. Load real branch info and menu documents from backend
-        const [branchRes, menuDocsRes] = await Promise.allSettled([
-          apiClient.getBranchInfo(DEFAULT_TENANT_ID, DEFAULT_BRANCH_ID),
-          apiClient.getMenuSourceDocuments(DEFAULT_TENANT_ID),
+        // 3. Load real public menu and Cloudinary menu documents from backend
+        const [menuDocsRes, publicMenuRes, branchRes] = await Promise.allSettled([
+          apiClient.getMenuSourceDocuments(activeTenantId),
+          apiClient.getPublicMenu(activeTenantId),
+          apiClient.getBranchInfo(activeTenantId, DEFAULT_BRANCH_ID),
         ]);
 
-        let branchData: BranchInfoData | null = null;
         let menuDocs: MenuSourceDocument[] = [];
-
-        if (branchRes.status === "fulfilled" && branchRes.value.success && branchRes.value.data) {
-          branchData = branchRes.value.data;
-        }
+        let publicMenuData: PublicMenuData | null = null;
+        let branchData: BranchInfoData | null = null;
 
         if (menuDocsRes.status === "fulfilled" && menuDocsRes.value.success && menuDocsRes.value.data) {
           menuDocs = menuDocsRes.value.data;
         }
 
+        if (publicMenuRes.status === "fulfilled" && publicMenuRes.value.success && publicMenuRes.value.data) {
+          publicMenuData = publicMenuRes.value.data;
+        }
+
+        if (branchRes.status === "fulfilled" && branchRes.value.success && branchRes.value.data) {
+          branchData = branchRes.value.data;
+        }
+
         setSession((prev) => ({
           ...prev,
+          menuDocuments: menuDocs,
+          publicMenu: publicMenuData,
           branchInfo: branchData,
           restaurantName: branchData?.tenant?.brandName || branchData?.tenant?.name || prev.restaurantName,
           branchName: branchData?.branch?.name || prev.branchName,
-          currency: branchData?.tenant?.currency || prev.currency,
-          menuDocuments: menuDocs,
+          currency: branchData?.tenant?.currency || "EGP",
           isLoading: false,
         }));
       } catch (err: any) {
@@ -208,6 +222,17 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const refreshPublicMenu = async () => {
+    try {
+      const res = await apiClient.getPublicMenu(session.tenantId);
+      if (res.success && res.data) {
+        setSession((prev) => ({ ...prev, publicMenu: res.data || null }));
+      }
+    } catch (err) {
+      console.warn("[SessionProvider] Refresh public menu error:", err);
+    }
+  };
+
   const expireSession = () => {
     setSession((prev) => ({ ...prev, isExpired: true }));
   };
@@ -225,6 +250,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         expireSession,
         resetSession,
         refreshMenuDocuments,
+        refreshPublicMenu,
       }}
     >
       {children}

@@ -44,7 +44,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     branchId: DEFAULT_BRANCH_ID,
     tableId: "",
     tableSessionId: "",
-    tableNumber: "10",
+    tableNumber: "",
     isExpired: false,
     restaurantName: "بيتزا وكريب توفيق",
     branchName: "الفرع الرئيسي",
@@ -71,6 +71,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       chatId: "",
       tableSessionId: "",
+      tableNumber: "",
       isExpired: false,
       error: null,
     }));
@@ -97,7 +98,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         let activeChatId = "";
         let activeTableId = "";
         let activeTableSessionId = "";
-        let activeTableNumber = "10";
+        let activeTableNumber = "";
 
         // 1. If customer just landed with a QR scan token
         if (token) {
@@ -114,7 +115,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
               activeBranchId = data.branchId || activeBranchId;
               activeTableId = data.tableId || "";
               activeTableSessionId = data.tableSessionId || data.sessionId || "";
-              activeTableNumber = String(data.tableNumber || "10");
+              activeTableNumber = data.tableNumber !== undefined ? String(data.tableNumber) : "";
 
               // Save in tab-scoped sessionStorage (never in permanent localStorage)
               if (typeof window !== "undefined") {
@@ -149,7 +150,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
                 activeBranchId = saved.branchId || activeBranchId;
                 activeTableId = saved.tableId || "";
                 activeTableSessionId = saved.tableSessionId || "";
-                activeTableNumber = saved.tableNumber || "10";
+                activeTableNumber = saved.tableNumber ? String(saved.tableNumber) : "";
 
                 // Revalidate with backend in background
                 apiClient.revalidateSession(saved.chatId, "web").then((rev) => {
@@ -157,7 +158,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
                     setSession((prev) => ({
                       ...prev,
                       tableSessionId: rev.data?.sessionId || prev.tableSessionId,
-                      tableNumber: String(rev.data?.tableNumber || prev.tableNumber),
+                      tableNumber: rev.data?.tableNumber !== undefined ? String(rev.data.tableNumber) : prev.tableNumber,
                     }));
                   }
                 }).catch(() => {
@@ -245,7 +246,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
               branchId: data.branchId,
               tableId: data.tableId,
               tableSessionId: newTableSessionId,
-              tableNumber: String(data.tableNumber || "10"),
+              tableNumber: data.tableNumber !== undefined ? String(data.tableNumber) : "",
             })
           );
           window.history.replaceState({}, "", window.location.pathname);
@@ -258,7 +259,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           branchId: data.branchId,
           tableId: data.tableId,
           tableSessionId: newTableSessionId,
-          tableNumber: String(data.tableNumber || prev.tableNumber),
+          tableNumber: data.tableNumber !== undefined ? String(data.tableNumber) : prev.tableNumber,
           isExpired: false,
           isLoading: false,
         }));

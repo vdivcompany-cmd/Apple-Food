@@ -59,8 +59,8 @@ export function WelcomeView({
             </span>
             !
           </h1>
-          <p className="text-xs md:text-sm font-semibold text-primary mt-1">
-            {session.branchName} · Table {session.tableNumber || "10"}
+          <p className="text-xs md:text-sm font-bold text-primary-container mt-1 font-arabic">
+            {session.branchName}{session.tableNumber ? ` · طاولة ${session.tableNumber}` : ""}
           </p>
         </div>
 

@@ -81,13 +81,22 @@ export function Header({ onToggleSidebar, isSidebarOpen }: HeaderProps) {
 
       {/* Table & Session Indicator */}
       <div className="flex items-center gap-2 sm:gap-3 font-arabic">
-        <span className="font-bold text-primary dark:text-primary-fixed-dim text-xs sm:text-sm md:text-base whitespace-nowrap">
-          طاولة {session.tableNumber}
-        </span>
-        <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-primary-container/10 border border-primary-container/20 text-primary-container rounded-full text-[11px] sm:text-xs font-bold whitespace-nowrap">
-          <span className="w-2 h-2 rounded-full bg-primary-container animate-pulse" />
-          <span>مباشر</span>
-        </div>
+        {session.tableNumber ? (
+          <>
+            <span className="font-bold text-primary dark:text-primary-fixed-dim text-xs sm:text-sm md:text-base whitespace-nowrap">
+              طاولة {session.tableNumber}
+            </span>
+            <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-primary-container/10 border border-primary-container/20 text-primary-container rounded-full text-[11px] sm:text-xs font-bold whitespace-nowrap">
+              <span className="w-2 h-2 rounded-full bg-primary-container animate-pulse" />
+              <span>جلسة مباشرة</span>
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-container rounded-full text-secondary text-xs font-bold border border-surface-variant/40">
+            <span className="material-symbols-outlined text-sm text-primary">qr_code_scanner</span>
+            <span className="hidden sm:inline">تصفح المنيو</span>
+          </div>
+        )}
       </div>
     </header>
   );

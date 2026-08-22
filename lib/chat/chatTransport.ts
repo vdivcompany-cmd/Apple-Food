@@ -119,22 +119,21 @@ export class WebhookChatTransport implements ChatTransport {
     this.webhookUrl =
       webhookUrl ||
       process.env.NEXT_PUBLIC_CHAT_WEBHOOK_URL ||
-      "";
+      "https://ahmed-21-00380.app.n8n.cloud/webhook/web-chat";
   }
 
   async sendMessage(input: ChatTransportInput): Promise<ChatTransportResponse> {
-    if (!this.webhookUrl) {
-      console.warn("[WebhookChatTransport] Webhook URL not configured. Falling back to DirectSearchChatTransport.");
-      const fallback = new DirectSearchChatTransport();
-      return fallback.sendMessage(input);
-    }
+    const fallbackSessionId =
+      input.sessionId ||
+      input.tableSessionId ||
+      `web_guest_${Date.now()}`;
 
     const payload = {
-      sessionId: input.sessionId,
-      tenantId: input.tenantId,
-      branchId: input.branchId,
-      tableId: input.tableId,
-      tableSessionId: input.tableSessionId,
+      sessionId: fallbackSessionId,
+      tenantId: input.tenantId || "",
+      branchId: input.branchId || "",
+      tableId: input.tableId || "",
+      tableSessionId: input.tableSessionId || fallbackSessionId,
       message: input.message,
       channel: "web",
     };
@@ -163,14 +162,11 @@ export class WebhookChatTransport implements ChatTransport {
 /**
  * Factory function for chat transport dependency injection
  * 
- * Returns WebhookChatTransport when NEXT_PUBLIC_CHAT_WEBHOOK_URL is set (production/staging).
- * Falls back to DirectSearchChatTransport if the env var is missing (local dev without n8n).
+ * Defaults to WebhookChatTransport connecting to n8n.
  */
 export function getChatTransport(): ChatTransport {
-  const webhookUrl = process.env.NEXT_PUBLIC_CHAT_WEBHOOK_URL;
-  if (webhookUrl) {
-    return new WebhookChatTransport(webhookUrl);
-  }
-  // Fallback if env var isn't set (keeps local dev working)
-  return new DirectSearchChatTransport();
+  const webhookUrl =
+    process.env.NEXT_PUBLIC_CHAT_WEBHOOK_URL ||
+    "https://ahmed-21-00380.app.n8n.cloud/webhook/web-chat";
+  return new WebhookChatTransport(webhookUrl);
 }

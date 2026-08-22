@@ -10,6 +10,7 @@ export default function HomePage() {
   const { messages, sendMessage, isTyping } = useChat();
   const { session } = useSession();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [inputText, setInputText] = useState("");
 
   // If only initial bot message exists and no user message yet, show Welcome Landing
   const hasUserStartedChat = messages.some((m) => m.sender === "user");
@@ -20,9 +21,18 @@ export default function HomePage() {
     category: string;
     productId?: string;
   }) => {
-    sendMessage(
-      `عايز أسأل عن صنف ${item.name} (${item.price} ${session.currency}) من قسم ${item.category}، وممكن أطلبه للطاولة؟`,
-    );
+    setInputText((prev) => {
+      const trimmed = prev.trim();
+      if (!trimmed) {
+        return item.name;
+      }
+      return `${trimmed} و ${item.name}`;
+    });
+  };
+
+  const handleSend = (text: string) => {
+    sendMessage(text);
+    setInputText("");
   };
 
   return (
@@ -61,7 +71,12 @@ export default function HomePage() {
           )}
 
           {/* Sticky Input Bar */}
-          <ChatInputBar onSend={sendMessage} disabled={isTyping} />
+          <ChatInputBar
+            value={inputText}
+            onChange={setInputText}
+            onSend={handleSend}
+            disabled={isTyping}
+          />
         </main>
       </div>
     </div>

@@ -5,16 +5,32 @@ import React, { useState } from "react";
 interface ChatInputBarProps {
   onSend: (text: string) => void;
   disabled?: boolean;
+  value?: string;
+  onChange?: (text: string) => void;
 }
 
-export function ChatInputBar({ onSend, disabled }: ChatInputBarProps) {
-  const [text, setText] = useState("");
+export function ChatInputBar({ onSend, disabled, value, onChange }: ChatInputBarProps) {
+  const [internalText, setInternalText] = useState("");
+  const isControlled = value !== undefined;
+  const currentText = isControlled ? value : internalText;
+
+  const handleTextChange = (newVal: string) => {
+    if (isControlled) {
+      onChange?.(newVal);
+    } else {
+      setInternalText(newVal);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim() || disabled) return;
-    onSend(text);
-    setText("");
+    if (!currentText.trim() || disabled) return;
+    onSend(currentText);
+    if (isControlled) {
+      onChange?.("");
+    } else {
+      setInternalText("");
+    }
   };
 
   return (
@@ -32,10 +48,10 @@ export function ChatInputBar({ onSend, disabled }: ChatInputBarProps) {
         {/* Text Input */}
         <input
           type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
+          value={currentText}
+          onChange={(e) => handleTextChange(e.target.value)}
           disabled={disabled}
-          placeholder="Type your order or ask about a dish..."
+          placeholder="اكتب طلبك أو استفسارك هنا..."
           className="flex-1 bg-transparent border-none outline-none text-sm md:text-base text-on-surface placeholder:text-on-surface-variant/70 focus:ring-0 px-2"
         />
 
@@ -51,7 +67,7 @@ export function ChatInputBar({ onSend, disabled }: ChatInputBarProps) {
         {/* Send Action Button */}
         <button
           type="submit"
-          disabled={!text.trim() || disabled}
+          disabled={!currentText.trim() || disabled}
           aria-label="Send message"
           className="p-3 bg-primary-container text-white rounded-full hover:scale-95 disabled:opacity-50 disabled:hover:scale-100 transition-all flex items-center justify-center w-11 h-11 shadow-sm flex-shrink-0"
         >

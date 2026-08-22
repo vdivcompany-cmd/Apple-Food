@@ -37,10 +37,6 @@ export function SideNavBar({ onSelectItem, onSelectCategory, isOpen = false, onC
 
   const handleProductClick = (item: { name: string; price: number; category: string; productId?: string }) => {
     onSelectItem?.(item);
-    // Auto close mobile drawer after selection
-    if (onClose) {
-      onClose();
-    }
   };
 
   const getCategoryIcon = (name: string) => {

@@ -163,10 +163,14 @@ export class WebhookChatTransport implements ChatTransport {
 /**
  * Factory function for chat transport dependency injection
  * 
- * SWAP POINT:
- * Change return new DirectSearchChatTransport() -> return new WebhookChatTransport()
- * when the n8n webhook is ready.
+ * Returns WebhookChatTransport when NEXT_PUBLIC_CHAT_WEBHOOK_URL is set (production/staging).
+ * Falls back to DirectSearchChatTransport if the env var is missing (local dev without n8n).
  */
 export function getChatTransport(): ChatTransport {
+  const webhookUrl = process.env.NEXT_PUBLIC_CHAT_WEBHOOK_URL;
+  if (webhookUrl) {
+    return new WebhookChatTransport(webhookUrl);
+  }
+  // Fallback if env var isn't set (keeps local dev working)
   return new DirectSearchChatTransport();
 }

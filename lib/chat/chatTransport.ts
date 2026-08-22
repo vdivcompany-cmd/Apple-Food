@@ -115,11 +115,8 @@ export class DirectSearchChatTransport implements ChatTransport {
 export class WebhookChatTransport implements ChatTransport {
   private webhookUrl: string;
 
-  constructor(webhookUrl?: string) {
-    this.webhookUrl =
-      webhookUrl ||
-      process.env.NEXT_PUBLIC_CHAT_WEBHOOK_URL ||
-      "/api/chat";
+  constructor(webhookUrl: string = "/api/chat") {
+    this.webhookUrl = webhookUrl;
   }
 
   async sendMessage(input: ChatTransportInput): Promise<ChatTransportResponse> {
@@ -162,11 +159,8 @@ export class WebhookChatTransport implements ChatTransport {
 /**
  * Factory function for chat transport dependency injection
  * 
- * Defaults to WebhookChatTransport connecting through /api/chat proxy.
+ * Always routes through Next.js /api/chat proxy to eliminate CORS.
  */
 export function getChatTransport(): ChatTransport {
-  const webhookUrl =
-    process.env.NEXT_PUBLIC_CHAT_WEBHOOK_URL ||
-    "/api/chat";
-  return new WebhookChatTransport(webhookUrl);
+  return new WebhookChatTransport("/api/chat");
 }

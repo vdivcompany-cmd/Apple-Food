@@ -119,7 +119,7 @@ export class WebhookChatTransport implements ChatTransport {
     this.webhookUrl =
       webhookUrl ||
       process.env.NEXT_PUBLIC_CHAT_WEBHOOK_URL ||
-      "https://ahmed-21-00380.app.n8n.cloud/webhook/web-chat";
+      "/api/chat";
   }
 
   async sendMessage(input: ChatTransportInput): Promise<ChatTransportResponse> {
@@ -162,11 +162,11 @@ export class WebhookChatTransport implements ChatTransport {
 /**
  * Factory function for chat transport dependency injection
  * 
- * Defaults to WebhookChatTransport connecting to n8n.
+ * Defaults to WebhookChatTransport connecting through /api/chat proxy.
  */
 export function getChatTransport(): ChatTransport {
   const webhookUrl =
     process.env.NEXT_PUBLIC_CHAT_WEBHOOK_URL ||
-    "https://ahmed-21-00380.app.n8n.cloud/webhook/web-chat";
+    "/api/chat";
   return new WebhookChatTransport(webhookUrl);
 }

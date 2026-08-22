@@ -21,8 +21,8 @@ export interface SessionState {
   error: string | null;
 }
 
-const DEFAULT_TENANT_ID = process.env.NEXT_PUBLIC_DEFAULT_TENANT_ID || "6a85e588d0b508058fc5008c";
-const DEFAULT_BRANCH_ID = process.env.NEXT_PUBLIC_DEFAULT_BRANCH_ID || "6a85e588d0b508058fc5008e";
+const DEFAULT_TENANT_ID = process.env.NEXT_PUBLIC_DEFAULT_TENANT_ID || "6a7602ce3fe906bfc78c3b15";
+const DEFAULT_BRANCH_ID = process.env.NEXT_PUBLIC_DEFAULT_BRANCH_ID || "6a7602d13fe906bfc78c3b17";
 const SESSION_STORAGE_KEY = "tablechat_session_state";
 
 interface SessionContextType {

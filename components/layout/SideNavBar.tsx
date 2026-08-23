@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useSession } from "@/lib/context/SessionContext";
 
 interface SideNavBarProps {
@@ -11,7 +13,18 @@ interface SideNavBarProps {
 }
 
 export function SideNavBar({ onSelectItem, onSelectCategory, isOpen = false, onClose }: SideNavBarProps) {
+  const pathname = usePathname();
   const { session } = useSession();
+
+  const isChatActive =
+    pathname === "/" ||
+    pathname?.includes("chat") ||
+    pathname?.includes("welcome");
+  const isOrderActive =
+    pathname === "/tracking" || pathname?.includes("order-tracking");
+  const isMenuActive = pathname === "/menu";
+  const isFeedbackActive = pathname === "/feedback";
+
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -90,19 +103,19 @@ export function SideNavBar({ onSelectItem, onSelectCategory, isOpen = false, onC
 
   return (
     <>
-      {/* Mobile Backdrop Overlay */}
+      {/* Mobile & Tablet Backdrop Overlay (< 1024px) */}
       {isOpen && (
         <div
           onClick={onClose}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 md:hidden animate-fade-in transition-opacity"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 lg:hidden animate-fade-in transition-opacity"
           aria-hidden="true"
         />
       )}
 
       {/* Main Sidebar Drawer with Full Vertical Scroll */}
       <aside
-        className={`fixed left-0 top-0 md:top-16 bottom-0 z-50 md:z-40 w-72 sm:w-80 max-w-[85vw] bg-surface-container-low dark:bg-inverse-surface shadow-2xl md:shadow-md flex flex-col h-full md:h-[calc(100vh-4rem)] p-4 sm:p-5 gap-3.5 border-r border-surface-variant/40 overflow-y-auto overflow-x-hidden custom-scrollbar font-arabic transition-transform duration-300 ease-in-out pb-24 ${
-          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        className={`fixed left-0 top-0 lg:top-16 bottom-0 z-50 lg:z-40 w-72 sm:w-80 max-w-[85vw] bg-surface-container-low dark:bg-inverse-surface shadow-2xl lg:shadow-md flex flex-col h-full lg:h-[calc(100vh-4rem)] p-4 sm:p-5 gap-3.5 border-r border-surface-variant/40 overflow-y-auto overflow-x-hidden custom-scrollbar font-arabic transition-transform duration-300 ease-in-out pb-24 ${
+          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
         {/* Top Header with Mobile Close Button */}
@@ -126,16 +139,73 @@ export function SideNavBar({ onSelectItem, onSelectCategory, isOpen = false, onC
             </div>
           </div>
 
-          {/* Close Button on Mobile */}
+          {/* Close Button on Mobile & Tablet */}
           {onClose && (
             <button
               onClick={onClose}
-              className="md:hidden flex items-center justify-center w-8 h-8 rounded-full bg-surface-container-highest text-on-surface hover:text-primary transition-colors flex-shrink-0"
+              className="lg:hidden flex items-center justify-center w-8 h-8 rounded-full bg-surface-container-highest text-on-surface hover:text-primary transition-colors flex-shrink-0"
               title="إغلاق"
             >
               <span className="material-symbols-outlined text-lg">close</span>
             </button>
           )}
+        </div>
+
+        {/* Navigation Tabs in Sidebar for screens <= 1024px */}
+        <div className="lg:hidden flex-shrink-0 flex flex-col gap-1.5 p-2.5 bg-surface-container-lowest rounded-2xl border border-surface-variant/40 shadow-sm">
+          <span className="text-[11px] font-extrabold text-secondary px-1">
+            أقسام التطبيق
+          </span>
+          <div className="grid grid-cols-2 gap-1.5">
+            <Link
+              href="/"
+              onClick={onClose}
+              className={`flex items-center gap-2 p-2.5 rounded-xl font-bold text-xs transition-all ${
+                isChatActive
+                  ? "bg-primary text-white shadow-sm"
+                  : "text-on-surface hover:bg-surface-container"
+              }`}
+            >
+              <span className="material-symbols-outlined text-base">chat</span>
+              <span>المحادثة</span>
+            </Link>
+            <Link
+              href="/tracking"
+              onClick={onClose}
+              className={`flex items-center gap-2 p-2.5 rounded-xl font-bold text-xs transition-all ${
+                isOrderActive
+                  ? "bg-primary text-white shadow-sm"
+                  : "text-on-surface hover:bg-surface-container"
+              }`}
+            >
+              <span className="material-symbols-outlined text-base">receipt_long</span>
+              <span>طلباتي</span>
+            </Link>
+            <Link
+              href="/menu"
+              onClick={onClose}
+              className={`flex items-center gap-2 p-2.5 rounded-xl font-bold text-xs transition-all ${
+                isMenuActive
+                  ? "bg-primary text-white shadow-sm"
+                  : "text-on-surface hover:bg-surface-container"
+              }`}
+            >
+              <span className="material-symbols-outlined text-base">menu_book</span>
+              <span>المنيو</span>
+            </Link>
+            <Link
+              href="/feedback"
+              onClick={onClose}
+              className={`flex items-center gap-2 p-2.5 rounded-xl font-bold text-xs transition-all ${
+                isFeedbackActive
+                  ? "bg-primary text-white shadow-sm"
+                  : "text-on-surface hover:bg-surface-container"
+              }`}
+            >
+              <span className="material-symbols-outlined text-base">hotel_class</span>
+              <span>التقييم</span>
+            </Link>
+          </div>
         </div>
 
         {/* Search Input */}

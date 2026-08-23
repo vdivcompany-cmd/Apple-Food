@@ -73,7 +73,7 @@ export default function HomePage() {
         />
 
         {/* Main Content Area */}
-        <main className="flex-1 ml-0 md:ml-80 flex flex-col h-full bg-surface relative overflow-hidden">
+        <main className="flex-1 ml-0 lg:ml-80 flex flex-col h-full bg-surface relative overflow-hidden">
           {!hasUserStartedChat ? (
             <WelcomeView
               onSelectPrompt={(prompt) => sendMessage(prompt)}

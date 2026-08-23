@@ -125,14 +125,15 @@ export function WelcomeView({
         {/* Quick Suggestion Chips */}
         <div className="pt-2">
           <p className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-2.5">
-            Or try asking:
+            اقتراحات سريعة للبدء:
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-2">
+          <div className="flex flex-wrap items-center justify-center gap-2 font-arabic">
             {[
-              "What are today's chef specials? 🌟",
-              "Recommend top seafood dishes 🐟",
-              "Show drinks & coffee ☕",
-              "عايز أطلب أكل مصري أصيل 🇪🇬",
+              "عايز أطلب دليفري 🛵",
+              "عايز أطلب تيك أواي 🛍️",
+              "رشحلي أحسن بيتزا عندكم 🍕",
+              "عرض أصناف المنيو كاملة 📋",
+              "عايز بيتزا جامايكا و تشيكن رانش 🍕",
             ].map((chip) => (
               <button
                 key={chip}

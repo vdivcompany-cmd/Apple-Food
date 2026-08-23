@@ -13,18 +13,44 @@ interface OrderContextType {
   error: string | null;
   fetchOrderHistory: () => Promise<void>;
   placeNewOrder: (items: PlaceOrderItemInput[]) => Promise<PlacedOrderData | null>;
+  placeNewCustomerOrder: (params: {
+    channel: "TAKEAWAY" | "DELIVERY";
+    customerName: string;
+    customerPhone: string;
+    deliveryAddress?: string;
+    notes?: string;
+    items: PlaceOrderItemInput[];
+  }) => Promise<PlacedOrderData | null>;
   reorderLastOrder: (orderId: string) => Promise<PlacedOrderData | null>;
   setCurrentOrder: (order: PlacedOrderData | null) => void;
 }
 
+const ORDER_STORAGE_KEY = "tablechat_active_order";
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 export function OrderProvider({ children }: { children: React.ReactNode }) {
   const { session } = useSession();
-  const [currentOrder, setCurrentOrder] = useState<PlacedOrderData | null>(null);
+  const [currentOrder, setCurrentOrder] = useState<PlacedOrderData | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = sessionStorage.getItem(ORDER_STORAGE_KEY);
+        if (saved) return JSON.parse(saved);
+      } catch {}
+    }
+    return null;
+  });
   const [orderHistory, setOrderHistory] = useState<PlacedOrderData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Sync currentOrder to sessionStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (currentOrder) {
+        sessionStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(currentOrder));
+      }
+    }
+  }, [currentOrder]);
 
   // 1. Fetch table order history
   const fetchOrderHistory = useCallback(async () => {
@@ -37,7 +63,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
         setOrderHistory(res.data);
         // If there's an active (non-delivered) order, set as currentOrder
         const active = res.data.find(
-          (o) => o.status === "placed" || o.status === "preparing" || o.status === "ready"
+          (o) => o.status === "placed" || o.status === "preparing" || o.status === "ready" || o.status === "PENDING" || o.status === "PREPARING" || o.status === "READY"
         );
         if (active && !currentOrder) {
           setCurrentOrder(active);
@@ -59,7 +85,12 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
 
   // 2. Auto-polling single order status every ~5s if current order is in progress
   const isTerminalState =
-    !currentOrder || currentOrder.status === "delivered" || currentOrder.status === "cancelled";
+    !currentOrder ||
+    currentOrder.status === "delivered" ||
+    currentOrder.status === "cancelled" ||
+    currentOrder.status === "SERVED" ||
+    currentOrder.status === "PAID" ||
+    currentOrder.status === "CANCELLED";
 
   const pollStatus = useCallback(async () => {
     if (!currentOrder?._id || !session.tenantId) return;
@@ -76,7 +107,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
 
   usePolling(pollStatus, 5000, !isTerminalState);
 
-  // 3. Place order strictly following backend rules (no price sent)
+  // 3. Place Dine-In QR order strictly following backend rules (no price sent)
   const placeNewOrder = async (items: PlaceOrderItemInput[]): Promise<PlacedOrderData | null> => {
     if (!session.tableId || !session.tenantId || !session.tableSessionId) {
       setError("Active table session missing.");
@@ -93,6 +124,44 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
         tableId: session.tableId,
         tableSessionId: session.tableSessionId,
         items,
+      });
+
+      if (res.success && res.data) {
+        setCurrentOrder(res.data);
+        setOrderHistory((prev) => [res.data!, ...prev]);
+        return res.data;
+      }
+      return null;
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 3b. Place Customer Takeaway or Delivery order
+  const placeNewCustomerOrder = async (params: {
+    channel: "TAKEAWAY" | "DELIVERY";
+    customerName: string;
+    customerPhone: string;
+    deliveryAddress?: string;
+    notes?: string;
+    items: PlaceOrderItemInput[];
+  }): Promise<PlacedOrderData | null> => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const res = await apiClient.placeCustomerOrder({
+        tenantId: session.tenantId,
+        branchId: session.branchId,
+        channel: params.channel,
+        customerName: params.customerName,
+        customerPhone: params.customerPhone,
+        deliveryAddress: params.deliveryAddress,
+        notes: params.notes,
+        items: params.items,
       });
 
       if (res.success && res.data) {
@@ -129,6 +198,16 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
         };
       });
 
+      if (oldOrderRes.data.channel === "TAKEAWAY" || oldOrderRes.data.channel === "DELIVERY") {
+        return placeNewCustomerOrder({
+          channel: oldOrderRes.data.channel,
+          customerName: oldOrderRes.data.customerName || "Customer",
+          customerPhone: oldOrderRes.data.customerPhone || "01000000000",
+          deliveryAddress: oldOrderRes.data.deliveryAddress,
+          items,
+        });
+      }
+
       return placeNewOrder(items);
     } catch (err: any) {
       setError(err.message);
@@ -146,6 +225,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
         error,
         fetchOrderHistory,
         placeNewOrder,
+        placeNewCustomerOrder,
         reorderLastOrder,
         setCurrentOrder,
       }}

@@ -29,7 +29,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const data = await response.json();
+    const rawText = await response.text();
+    let data: any = {};
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      data = { replyText: rawText };
+    }
+
     return NextResponse.json(data);
   } catch (error: any) {
     console.error("[api/chat] Proxy error:", error);

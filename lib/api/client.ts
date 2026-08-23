@@ -118,6 +118,7 @@ export interface PlaceOrderItemInput {
   quantity: number;
   variantId?: string;
   selectedOptionNames?: string[];
+  notes?: string;
 }
 
 export interface PlaceOrderPayload {
@@ -128,12 +129,28 @@ export interface PlaceOrderPayload {
   items: PlaceOrderItemInput[];
 }
 
+export interface PlaceCustomerOrderPayload {
+  tenantId: string;
+  branchId?: string;
+  channel: "TAKEAWAY" | "DELIVERY";
+  customerName: string;
+  customerPhone: string;
+  deliveryAddress?: string;
+  notes?: string;
+  items: PlaceOrderItemInput[];
+}
+
 export interface PlacedOrderData {
   _id: string;
+  orderNumber?: string;
   tenantId: string;
   branchId: string;
-  tableId: string;
-  tableSessionId: string;
+  channel?: "DINE_IN" | "TAKEAWAY" | "DELIVERY" | "QR" | "WEB" | "TELEGRAM";
+  tableId?: string;
+  tableSessionId?: string;
+  customerName?: string;
+  customerPhone?: string;
+  deliveryAddress?: string;
   items: Array<{
     productId: string | { _id: string; name: string };
     name: string;
@@ -142,8 +159,21 @@ export interface PlacedOrderData {
     totalPrice: number;
     selectedVariants?: any[];
   }>;
+  subtotal?: number;
+  taxAmount?: number;
   totalAmount: number;
-  status: "placed" | "preparing" | "ready" | "delivered" | "cancelled";
+  status:
+    | "PENDING"
+    | "PREPARING"
+    | "READY"
+    | "SERVED"
+    | "PAID"
+    | "CANCELLED"
+    | "placed"
+    | "preparing"
+    | "ready"
+    | "delivered"
+    | "cancelled";
   estimatedMinutes?: number;
   createdAt: string;
 }
@@ -322,14 +352,22 @@ export const apiClient = {
   },
 
   /**
-   * 8. Place order
+   * 8. Place Dine-In QR order
    * POST /api/v1/orders/qr
-   * Rules:
-   * - Only send productId/variantId from Search Menu response.
-   * - Never send price.
    */
   async placeOrder(payload: PlaceOrderPayload): Promise<ApiResponse<PlacedOrderData>> {
     return request<ApiResponse<PlacedOrderData>>("/api/v1/orders/qr", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /**
+   * 8b. Place Takeaway or Delivery customer order
+   * POST /api/v1/orders/customer
+   */
+  async placeCustomerOrder(payload: PlaceCustomerOrderPayload): Promise<ApiResponse<PlacedOrderData>> {
+    return request<ApiResponse<PlacedOrderData>>("/api/v1/orders/customer", {
       method: "POST",
       body: JSON.stringify(payload),
     });

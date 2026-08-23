@@ -23,8 +23,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     {
       id: "initial-ai-welcome",
       sender: "ai",
-      text: `Hello and welcome to Table ${session.tableNumber}! I'm ResBot, your AI Waiter. Feel free to ask about our menu, today's chef specials, or dietary options.`,
-      timestamp: "Just now",
+      text: session.tableNumber
+        ? `أهلاً بحضرتك في طاولة ${session.tableNumber}! أنا ResBot مساعدك الذكي في ${session.restaurantName}. تحت أمرك لأي طلب أو استفسار عن المنيو ❤️`
+        : `أهلاً بحضرتك في ${session.restaurantName}! أنا ResBot مساعدك الذكي. تحت أمرك لاستعراض المنيو وطلب الدليفري أو الاستلام ❤️`,
+      timestamp: "الآن",
     },
   ]);
   const [isTyping, setIsTyping] = useState<boolean>(false);

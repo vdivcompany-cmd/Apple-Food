@@ -12,7 +12,15 @@ interface SideNavBarProps {
 
 export function SideNavBar({ onSelectItem, onSelectCategory, isOpen = false, onClose }: SideNavBarProps) {
   const { session } = useSession();
-  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = sessionStorage.getItem("tablechat_expanded_cats");
+        if (saved) return JSON.parse(saved);
+      } catch {}
+    }
+    return {};
+  });
   const [searchQuery, setSearchQuery] = useState("");
 
   // Categories are instantly available from global SessionContext (no redundant refetching on route changes)
@@ -20,18 +28,32 @@ export function SideNavBar({ onSelectItem, onSelectCategory, isOpen = false, onC
   const isLoading = session.isLoading && categories.length === 0;
   const error = session.error;
 
-  // Automatically expand the first category once categories are loaded
+  // Automatically expand the first category if none is expanded
   useEffect(() => {
     if (categories.length > 0 && Object.keys(expandedCategories).length === 0) {
-      setExpandedCategories({ [categories[0].id]: true });
+      const initial = { [categories[0].id]: true };
+      setExpandedCategories(initial);
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem("tablechat_expanded_cats", JSON.stringify(initial));
+        } catch {}
+      }
     }
   }, [categories, expandedCategories]);
 
   const toggleCategory = (catId: string) => {
-    setExpandedCategories((prev) => ({
-      ...prev,
-      [catId]: !prev[catId],
-    }));
+    setExpandedCategories((prev) => {
+      const next = {
+        ...prev,
+        [catId]: !prev[catId],
+      };
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem("tablechat_expanded_cats", JSON.stringify(next));
+        } catch {}
+      }
+      return next;
+    });
     onSelectCategory?.(catId);
   };
 
@@ -86,14 +108,19 @@ export function SideNavBar({ onSelectItem, onSelectCategory, isOpen = false, onC
         {/* Top Header with Mobile Close Button */}
         <div className="flex-shrink-0 flex items-center justify-between gap-2 mb-1">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-primary-fixed flex items-center justify-center text-primary font-bold text-xl sm:text-2xl shadow-sm border border-primary/20 flex-shrink-0">
-              🍕
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-primary-fixed flex items-center justify-center shadow-sm border border-primary/20 p-1.5 flex-shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/icons8-hamburger-48.png"
+                alt="Brand Logo"
+                className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
+              />
             </div>
             <div className="min-w-0">
-              <h2 className="font-extrabold text-sm sm:text-base text-on-surface leading-tight truncate">
+              <h2 suppressHydrationWarning className="font-extrabold text-sm sm:text-base text-on-surface leading-tight truncate">
                 {session.restaurantName || "بيتزا وكريب توفيق"}
               </h2>
-              <p className="text-on-surface-variant text-[11px] font-semibold mt-0.5 truncate">
+              <p suppressHydrationWarning className="text-on-surface-variant text-[11px] font-semibold mt-0.5 truncate">
                 {isLoading ? "جاري تحميل المنيو..." : "قائمة الطعام والأسعار المباشرة"}
               </p>
             </div>

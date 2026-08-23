@@ -190,14 +190,15 @@ export class ApiError extends Error {
   }
 }
 
-// In-memory client cache for fast instant route switching without network refetching
+// Dual-layer cache (In-Memory + localStorage) for instant 0ms rendering across reloads
 interface CacheEntry<T> {
   data: T;
   timestamp: number;
 }
 
 const memoryCache = new Map<string, CacheEntry<any>>();
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache TTL
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour persistent cache TTL for public menu catalogs
+const STORAGE_CACHE_PREFIX = "tablechat_apicache_";
 
 export interface ExtendedRequestInit extends RequestInit {
   useCache?: boolean;
@@ -208,12 +209,27 @@ export interface ExtendedRequestInit extends RequestInit {
 async function request<T>(endpoint: string, options: ExtendedRequestInit = {}): Promise<T> {
   const isGet = !options.method || options.method.toUpperCase() === "GET";
   const cacheKey = endpoint;
+  const ttl = options.ttlMs || CACHE_TTL_MS;
 
-  // 1. Check in-memory client cache for GET requests
+  // 1. Check in-memory client cache
   if (isGet && options.useCache !== false && !options.forceRefresh) {
     const cached = memoryCache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < (options.ttlMs || CACHE_TTL_MS)) {
+    if (cached && Date.now() - cached.timestamp < ttl) {
       return cached.data as T;
+    }
+
+    // 2. Check localStorage persistent cache if memory was cleared on reload
+    if (typeof window !== "undefined") {
+      try {
+        const storedStr = localStorage.getItem(`${STORAGE_CACHE_PREFIX}${cacheKey}`);
+        if (storedStr) {
+          const stored: CacheEntry<T> = JSON.parse(storedStr);
+          if (stored && Date.now() - stored.timestamp < ttl) {
+            memoryCache.set(cacheKey, stored);
+            return stored.data;
+          }
+        }
+      } catch {}
     }
   }
 
@@ -240,9 +256,15 @@ async function request<T>(endpoint: string, options: ExtendedRequestInit = {}): 
       throw new ApiError(errorMsg, res.status, json);
     }
 
-    // 2. Cache successful GET responses in memory
+    // 3. Cache successful GET responses in memory and localStorage
     if (isGet && options.useCache !== false) {
-      memoryCache.set(cacheKey, { data: json, timestamp: Date.now() });
+      const entry = { data: json, timestamp: Date.now() };
+      memoryCache.set(cacheKey, entry);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(`${STORAGE_CACHE_PREFIX}${cacheKey}`, JSON.stringify(entry));
+        } catch {}
+      }
     }
 
     return json as T;
@@ -403,9 +425,39 @@ export const apiClient = {
   },
 
   /**
-   * Clear in-memory client cache
+   * Synchronously retrieve cached data from memory or localStorage (0ms initial mount helper)
+   */
+  getCached<T>(endpoint: string): T | null {
+    const memory = memoryCache.get(endpoint);
+    if (memory && Date.now() - memory.timestamp < CACHE_TTL_MS) {
+      return memory.data as T;
+    }
+    if (typeof window !== "undefined") {
+      try {
+        const storedStr = localStorage.getItem(`${STORAGE_CACHE_PREFIX}${endpoint}`);
+        if (storedStr) {
+          const stored: CacheEntry<T> = JSON.parse(storedStr);
+          if (stored && Date.now() - stored.timestamp < CACHE_TTL_MS) {
+            memoryCache.set(endpoint, stored);
+            return stored.data;
+          }
+        }
+      } catch {}
+    }
+    return null;
+  },
+
+  /**
+   * Clear in-memory and persistent client cache
    */
   clearCache() {
     memoryCache.clear();
+    if (typeof window !== "undefined") {
+      try {
+        Object.keys(localStorage)
+          .filter((k) => k.startsWith(STORAGE_CACHE_PREFIX))
+          .forEach((k) => localStorage.removeItem(k));
+      } catch {}
+    }
   },
 };

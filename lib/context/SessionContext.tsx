@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { apiClient, BranchInfoData, MenuSourceDocument, PublicMenuData } from "@/lib/api/client";
+import { apiClient, ApiResponse, BranchInfoData, MenuSourceDocument, PublicMenuData } from "@/lib/api/client";
 
 export interface SessionState {
   chatId: string;
@@ -170,9 +170,55 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
               sessionStorage.removeItem(SESSION_STORAGE_KEY);
             }
           }
+
+          // If visitor doesn't have a chatId yet, create a stable tab-scoped guest ID
+          if (!activeChatId) {
+            activeChatId = `web_guest_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+            sessionStorage.setItem(
+              SESSION_STORAGE_KEY,
+              JSON.stringify({
+                chatId: activeChatId,
+                tenantId: activeTenantId,
+                branchId: activeBranchId,
+                tableId: activeTableId,
+                tableSessionId: activeTableSessionId,
+                tableNumber: activeTableNumber,
+              })
+            );
+          }
         }
 
-        // 3. Load live public menu catalog, Cloudinary documents, and branch info
+        // 3. Immediately hydrate state from persistent cache in 0ms (client-side only, no SSR mismatch)
+        const cachedDocs = apiClient.getCached<ApiResponse<MenuSourceDocument[]>>(
+          `/api/v1/menu/source-documents/${encodeURIComponent(activeTenantId)}`
+        );
+        const cachedMenu = apiClient.getCached<ApiResponse<PublicMenuData>>(
+          `/api/v1/menu/catalog?tenantId=${encodeURIComponent(activeTenantId)}`
+        );
+        const cachedBranch = apiClient.getCached<ApiResponse<BranchInfoData>>(
+          `/api/v1/tenants/${encodeURIComponent(activeTenantId)}/branches/${encodeURIComponent(activeBranchId)}/info`
+        );
+
+        if (cachedMenu && cachedMenu.data && cachedMenu.data.categories?.length > 0) {
+          setSession((prev) => ({
+            ...prev,
+            chatId: activeChatId || prev.chatId,
+            tenantId: activeTenantId,
+            branchId: activeBranchId,
+            tableId: activeTableId || prev.tableId,
+            tableSessionId: activeTableSessionId || prev.tableSessionId,
+            tableNumber: activeTableNumber || prev.tableNumber,
+            menuDocuments: cachedDocs?.data || prev.menuDocuments,
+            publicMenu: cachedMenu.data || null,
+            branchInfo: cachedBranch?.data || prev.branchInfo,
+            restaurantName: cachedBranch?.data?.tenant?.brandName || cachedBranch?.data?.tenant?.name || prev.restaurantName,
+            branchName: cachedBranch?.data?.branch?.name || prev.branchName,
+            currency: cachedBranch?.data?.tenant?.currency || prev.currency,
+            isLoading: false,
+          }));
+        }
+
+        // 4. Background silent revalidation (fetch live fresh data)
         const [menuDocsRes, publicMenuRes, branchRes] = await Promise.allSettled([
           apiClient.getMenuSourceDocuments(activeTenantId),
           apiClient.getPublicMenu(activeTenantId),
@@ -203,12 +249,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           tableId: activeTableId || prev.tableId,
           tableSessionId: activeTableSessionId || prev.tableSessionId,
           tableNumber: activeTableNumber,
-          menuDocuments: menuDocs,
-          publicMenu: publicMenuData,
-          branchInfo: branchData,
+          menuDocuments: menuDocs.length > 0 ? menuDocs : prev.menuDocuments,
+          publicMenu: publicMenuData || prev.publicMenu,
+          branchInfo: branchData || prev.branchInfo,
           restaurantName: branchData?.tenant?.brandName || branchData?.tenant?.name || prev.restaurantName,
           branchName: branchData?.branch?.name || prev.branchName,
-          currency: branchData?.tenant?.currency || "EGP",
+          currency: branchData?.tenant?.currency || prev.currency,
           isLoading: false,
         }));
       } catch (err: any) {

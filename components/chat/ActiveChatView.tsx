@@ -7,6 +7,8 @@ import { useOrder } from "@/lib/context/OrderContext";
 import { useChat } from "@/lib/context/ChatContext";
 import { useSession } from "@/lib/context/SessionContext";
 
+import { RichChatBubble } from "./RichChatBubble";
+
 interface ActiveChatViewProps {
   messages: ChatMessage[];
   isTyping?: boolean;
@@ -15,7 +17,7 @@ interface ActiveChatViewProps {
 export function ActiveChatView({ messages, isTyping }: ActiveChatViewProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const { currentOrder } = useOrder();
-  const { searchedProducts, placeTableOrder } = useChat();
+  const { searchedProducts, placeTableOrder, sendMessage } = useChat();
   const { session } = useSession();
   const [orderingProductId, setOrderingProductId] = useState<string | null>(null);
 
@@ -71,24 +73,33 @@ export function ActiveChatView({ messages, isTyping }: ActiveChatViewProps) {
             key={msg.id}
             className={`flex items-end gap-3 ${isUser ? "justify-end" : "justify-start"}`}
           >
-            {/* AI Avatar */}
+            {/* AI Avatar - Burger */}
             {!isUser && (
-              <div className="w-9 h-9 rounded-full bg-primary-fixed flex-shrink-0 flex items-center justify-center text-primary font-bold text-sm shadow-sm border border-primary/20">
-                <span className="material-symbols-outlined text-lg text-primary-container">smart_toy</span>
+              <div className="w-9 h-9 rounded-full bg-primary-fixed flex-shrink-0 flex items-center justify-center shadow-sm border border-primary/20 p-1 overflow-hidden self-start mt-1">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/icons8-hamburger-48.png"
+                  alt="ResBot"
+                  className="w-6 h-6 object-contain"
+                />
               </div>
             )}
 
             {/* Message Bubble */}
             <div
-              className={`max-w-[85%] md:max-w-lg rounded-2xl p-4 text-sm md:text-base transition-all shadow-card-soft ${
+              className={`max-w-[90%] md:max-w-xl rounded-3xl p-4 md:p-5 text-sm md:text-base transition-all shadow-card-soft ${
                 isUser
-                  ? "bg-primary-container text-white rounded-br-none"
-                  : "bg-surface-container-lowest text-on-surface border border-outline-variant/30 rounded-bl-none"
+                  ? "bg-primary text-white rounded-br-none"
+                  : "bg-surface-container-lowest text-on-surface border border-outline-variant/30 rounded-bl-none shadow-sm"
               }`}
             >
-              <p className="leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+              <RichChatBubble
+                text={msg.text}
+                isUser={isUser}
+                onQuickAction={(actionText) => sendMessage(actionText)}
+              />
               <span
-                className={`block text-[10px] mt-1.5 font-medium ${
+                className={`block text-[10px] mt-2 font-medium ${
                   isUser ? "text-white/80 text-right" : "text-on-surface-variant text-left"
                 }`}
               >
@@ -98,7 +109,7 @@ export function ActiveChatView({ messages, isTyping }: ActiveChatViewProps) {
 
             {/* User Avatar */}
             {isUser && (
-              <div className="w-9 h-9 rounded-full bg-secondary-container flex-shrink-0 flex items-center justify-center text-on-surface font-bold text-xs shadow-sm">
+              <div className="w-9 h-9 rounded-full bg-secondary-container flex-shrink-0 flex items-center justify-center text-on-surface font-bold text-xs shadow-sm self-start mt-1">
                 You
               </div>
             )}
@@ -156,8 +167,13 @@ export function ActiveChatView({ messages, isTyping }: ActiveChatViewProps) {
       {/* Typing Indicator */}
       {isTyping && (
         <div className="flex items-center gap-3 justify-start">
-          <div className="w-9 h-9 rounded-full bg-primary-fixed flex-shrink-0 flex items-center justify-center text-primary-container">
-            <span className="material-symbols-outlined text-lg">smart_toy</span>
+          <div className="w-9 h-9 rounded-full bg-primary-fixed flex-shrink-0 flex items-center justify-center border border-primary/20 p-1 overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icons8-hamburger-48.png"
+              alt="ResBot"
+              className="w-6 h-6 object-contain"
+            />
           </div>
           <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl rounded-bl-none px-4 py-3 shadow-card-soft flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-secondary animate-bounce" style={{ animationDelay: "0ms" }} />

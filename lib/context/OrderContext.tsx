@@ -98,12 +98,25 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await apiClient.getOrderStatus(currentOrder._id, session.tenantId);
       if (res.success && res.data) {
+        const prevStatus = (currentOrder.status || "").toUpperCase();
+        const nextStatus = (res.data.status || "").toUpperCase();
+
+        if (
+          (prevStatus === "PENDING" || prevStatus === "PLACED") &&
+          (nextStatus === "PREPARING" || nextStatus === "CONFIRMED" || nextStatus === "READY")
+        ) {
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("tablechat:order-confirmed", { detail: res.data })
+            );
+          }
+        }
         setCurrentOrder(res.data);
       }
     } catch (err) {
       console.warn("[OrderProvider] Polling error:", err);
     }
-  }, [currentOrder?._id, session.tenantId]);
+  }, [currentOrder, session.tenantId]);
 
   usePolling(pollStatus, 5000, !isTerminalState);
 

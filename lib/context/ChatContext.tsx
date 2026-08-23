@@ -32,6 +32,29 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [isTyping, setIsTyping] = useState<boolean>(false);
   const [searchedProducts, setSearchedProducts] = useState<SearchedProduct[]>([]);
 
+  // Listen for real-time order confirmation from restaurant staff / phone call verification
+  React.useEffect(() => {
+    const handleConfirmed = (e: any) => {
+      const order = e.detail;
+      const orderShortId = order?._id ? `ORD-${order._id.slice(-6).toUpperCase()}` : "ORD-CONFIRMED";
+      const total = order?.totalAmount ? `${order.totalAmount} EGP` : "";
+
+      const confirmMsg: ChatMessage = {
+        id: `ai-confirmed-${Date.now()}`,
+        sender: "ai",
+        text: `🎉 تم تأكيد طلبك بنجاح من المطعم يا فندم!\n**تفاصيل الطلب:**\n- **الطلب رقم:** ${orderShortId}\n- **الحالة:** جاري التجهيز في المطبخ\n${total ? `- **الإجمالي:** ${total}\n` : ""}سيتواصل معك المندوب عند خروج الطلب. شكراً لاختيارك أبل فود! ❤️`,
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      };
+
+      setMessages((prev) => [...prev, confirmMsg]);
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("tablechat:order-confirmed", handleConfirmed);
+      return () => window.removeEventListener("tablechat:order-confirmed", handleConfirmed);
+    }
+  }, []);
+
   const sendMessage = async (text: string) => {
     if (!text.trim()) return;
 
@@ -54,6 +77,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         branchId: session.branchId,
         tableId: session.tableId,
         tableSessionId: session.tableSessionId,
+        tableNumber: session.tableNumber,
         message: text,
       });
 

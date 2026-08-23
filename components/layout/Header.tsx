@@ -14,12 +14,16 @@ export function Header({ onToggleSidebar, isSidebarOpen }: HeaderProps) {
   const pathname = usePathname();
   const { session } = useSession();
 
-  const isChatActive = pathname === "/" || pathname?.includes("chat") || pathname?.includes("welcome");
-  const isOrderActive = pathname === "/tracking" || pathname?.includes("order-tracking");
+  const isChatActive =
+    pathname === "/" ||
+    pathname?.includes("chat") ||
+    pathname?.includes("welcome");
+  const isOrderActive =
+    pathname === "/tracking" || pathname?.includes("order-tracking");
   const isMenuActive = pathname === "/menu";
 
   return (
-    <header className="bg-surface/90 dark:bg-inverse-surface/90 backdrop-blur-xl shadow-sm flex justify-between items-center px-3 sm:px-6 md:px-12 w-full h-16 sticky top-0 z-50 border-b border-surface-variant/30">
+    <header className="bg-surface/90 dark:bg-inverse-surface/90 backdrop-blur-xl shadow-sm flex justify-between items-center px-3 sm:px-6 md:px-5 w-full h-16 sticky top-0 z-50 border-b border-surface-variant/30">
       <div className="flex items-center gap-2 sm:gap-3">
         {/* Mobile Sidebar Toggle Button */}
         {onToggleSidebar && (
@@ -35,7 +39,15 @@ export function Header({ onToggleSidebar, isSidebarOpen }: HeaderProps) {
           </button>
         )}
 
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-primary-fixed flex items-center justify-center border border-primary/20 shadow-sm p-1 flex-shrink-0 group-hover:scale-105 transition-transform">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icons8-hamburger-48.png"
+              alt="TableChat Logo"
+              className="w-6 h-6 sm:w-7 sm:h-7 object-contain"
+            />
+          </div>
           <span className="text-xl sm:text-2xl font-extrabold text-primary dark:text-primary-fixed-dim tracking-tight">
             TableChat
           </span>
@@ -93,7 +105,9 @@ export function Header({ onToggleSidebar, isSidebarOpen }: HeaderProps) {
           </>
         ) : (
           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-container rounded-full text-secondary text-xs font-bold border border-surface-variant/40">
-            <span className="material-symbols-outlined text-sm text-primary">qr_code_scanner</span>
+            <span className="material-symbols-outlined text-sm text-primary">
+              qr_code_scanner
+            </span>
             <span className="hidden sm:inline">تصفح المنيو</span>
           </div>
         )}

@@ -1,8 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 import { useSession } from "@/lib/context/SessionContext";
 import { useOrder } from "@/lib/context/OrderContext";
+
+gsap.registerPlugin(useGSAP);
 
 interface WelcomeViewProps {
   onSelectPrompt?: (prompt: string) => void;
@@ -19,6 +23,138 @@ export function WelcomeView({
   const { orderHistory, reorderLastOrder } = useOrder();
   const [showMenuDocModal, setShowMenuDocModal] = useState(false);
   const [reorderLoading, setReorderLoading] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const badgeRef = useRef<HTMLDivElement>(null);
+  const burgerRef = useRef<HTMLImageElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  // GSAP Animation setup
+  const { contextSafe } = useGSAP(
+    () => {
+      // 1. Initial State for Tooltip (hidden)
+      gsap.set(tooltipRef.current, {
+        opacity: 0,
+        scale: 0.5,
+        y: 10,
+        pointerEvents: "none",
+      });
+
+      // 2. Entrance + One-time Float & Tilt Sequence (Plays ONCE on load)
+      const tl = gsap.timeline({ defaults: { ease: "back.out(1.7)" } });
+
+      tl.from(badgeRef.current, {
+        scale: 0.2,
+        opacity: 0,
+        duration: 0.6,
+      })
+        .from(
+          burgerRef.current,
+          {
+            scale: 0,
+            rotation: -45,
+            duration: 0.7,
+            ease: "elastic.out(1.1, 0.45)",
+          },
+          "-=0.3",
+        )
+        // Single float & tilt bounce (runs ONCE and settles)
+        .to(
+          burgerRef.current,
+          {
+            y: -12,
+            rotation: 8,
+            scale: 1.08,
+            duration: 0.5,
+            ease: "power2.out",
+          },
+          "+=0.1",
+        )
+        .to(
+          badgeRef.current,
+          {
+            boxShadow: "0 20px 30px -10px rgba(255, 140, 0, 0.4)",
+            duration: 0.5,
+            ease: "power2.out",
+          },
+          "<",
+        )
+        .to(burgerRef.current, {
+          y: 0,
+          rotation: 0,
+          scale: 1,
+          duration: 0.7,
+          ease: "elastic.out(1.2, 0.5)",
+        })
+        .to(
+          badgeRef.current,
+          {
+            boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+            duration: 0.7,
+            ease: "power2.out",
+          },
+          "<",
+        );
+    },
+    { scope: containerRef },
+  );
+
+  // Interactive Hover Animation + Hum Hum Tooltip
+  const handleMouseEnter = contextSafe(() => {
+    // Burger bounce & tilt
+    gsap.to(burgerRef.current, {
+      scale: 1.25,
+      rotation: -14,
+      y: -4,
+      duration: 0.35,
+      ease: "back.out(2.5)",
+      overwrite: "auto",
+    });
+    gsap.to(badgeRef.current, {
+      scale: 1.08,
+      boxShadow: "0 20px 25px -5px rgba(255, 140, 0, 0.35)",
+      duration: 0.35,
+      ease: "power2.out",
+      overwrite: "auto",
+    });
+    // Tooltip entrance
+    gsap.to(tooltipRef.current, {
+      opacity: 1,
+      scale: 1,
+      y: -6,
+      duration: 0.3,
+      ease: "back.out(2)",
+      overwrite: "auto",
+    });
+  });
+
+  const handleMouseLeave = contextSafe(() => {
+    // Burger settle back
+    gsap.to(burgerRef.current, {
+      scale: 1,
+      rotation: 0,
+      y: 0,
+      duration: 0.45,
+      ease: "elastic.out(1.2, 0.4)",
+      overwrite: "auto",
+    });
+    gsap.to(badgeRef.current, {
+      scale: 1,
+      boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+      duration: 0.4,
+      ease: "power2.out",
+      overwrite: "auto",
+    });
+    // Tooltip exit
+    gsap.to(tooltipRef.current, {
+      opacity: 0,
+      scale: 0.5,
+      y: 8,
+      duration: 0.22,
+      ease: "power2.in",
+      overwrite: "auto",
+    });
+  });
 
   const menuDoc =
     session.menuDocuments.length > 0 ? session.menuDocuments[0] : null;
@@ -41,13 +177,41 @@ export function WelcomeView({
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 mt-20 md:p-10 flex flex-col items-center justify-center">
+    <div
+      ref={containerRef}
+      className="flex-1  p-4 mt-20 md:p-10 flex flex-col items-center justify-center"
+    >
       <div className="max-w-2xl w-full text-center space-y-6">
-        {/* Animated Greeting Icon */}
-        <div className="inline-flex items-center justify-center w-20 h-20 bg-primary-fixed rounded-full mb-1 shadow-card-soft border border-primary/20 animate-bounce">
-          <span className="material-symbols-outlined text-4xl text-primary">
-            waving_hand
-          </span>
+        {/* Animated Greeting Icon - GSAP Enhanced Burger with Tooltip */}
+        <div className="relative inline-flex flex-col items-center">
+          {/* Hum Hum Tooltip */}
+          <div
+            ref={tooltipRef}
+            className="absolute -top-11 z-50 px-3 py-1 bg-primary text-white text-xs font-black rounded-full shadow-lg border border-white/30 flex items-center gap-1 whitespace-nowrap select-none"
+            style={{ willChange: "transform, opacity" }}
+          >
+            <span>🍔 Hum Hum! 😋</span>
+            {/* Tooltip Arrow */}
+            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-6 border-t-primary" />
+          </div>
+
+          {/* Burger Badge */}
+          <div
+            ref={badgeRef}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            className="inline-flex items-center justify-center w-20 h-20 bg-primary-fixed rounded-3xl mb-1 shadow-card-soft border border-primary/20 p-3 cursor-pointer select-none transition-colors"
+            style={{ willChange: "transform, box-shadow" }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              ref={burgerRef}
+              src="/icons8-hamburger-96.png"
+              alt="Burger"
+              className="w-14 h-14 object-contain drop-shadow-md select-none pointer-events-none"
+              style={{ willChange: "transform" }}
+            />
+          </div>
         </div>
 
         {/* Headline */}
@@ -60,7 +224,8 @@ export function WelcomeView({
             !
           </h1>
           <p className="text-xs md:text-sm font-bold text-primary-container mt-1 font-arabic">
-            {session.branchName}{session.tableNumber ? ` · طاولة ${session.tableNumber}` : ""}
+            {session.branchName}
+            {session.tableNumber ? ` · طاولة ${session.tableNumber}` : ""}
           </p>
         </div>
 

@@ -22,6 +22,7 @@ export interface ChatTransportInput {
   branchId: string;
   tableId: string;
   tableSessionId: string;
+  tableNumber?: string;
   message: string;
 }
 
@@ -48,52 +49,54 @@ export class DirectSearchChatTransport implements ChatTransport {
     try {
       // 1. Check if user is placing an order directly (e.g. from an item button)
       // If the message contains explicit item tags or intent:
+      if (lower.startsWith("/order ") || lower.startsWith("order:")) {
+        const itemTag = message.replace(/^\/order\s+|^order:\s*/i, "").trim();
+        return {
+          replyText: `تمام يا فندم! جاري إضافة ${itemTag} لطلبك...`,
+        };
+      }
+
+      // 2. Query the public menu search API
       const searchRes = await apiClient.searchMenu({
         sessionId: sessionId || tableSessionId,
         query: message,
-        topK: 5,
-      }).catch((err) => {
-        console.warn("[DirectSearchChatTransport] Search fallback:", err);
-        return null;
-      });
+        topK: 4,
+      }).catch(() => null);
 
-      const products: SearchedProduct[] = (searchRes && searchRes.data) ? searchRes.data : [];
+      if (searchRes && searchRes.success && searchRes.data && searchRes.data.length > 0) {
+        const products: SearchedProduct[] = searchRes.data;
+        const count = products.length;
 
-      // Format natural reply in Arabic or English based on input language
-      const isArabic = /[\u0600-\u06FF]/.test(message);
+        // Build a helpful Arabic response listing matched dishes
+        let reply = `لقيت لحضرتك ${count} أصناف مميزة في المنيو:\n\n`;
+        products.forEach((p: SearchedProduct, idx: number) => {
+          reply += `${idx + 1}. **${p.name}** — ${p.price} EGP\n`;
+          if (p.description) {
+            reply += `   _${p.description}_\n`;
+          }
+        });
+        reply += `\nتحب تضيف أي صنف منهم لطلبك يا فندم؟`;
 
-      if (products.length > 0) {
-        if (isArabic) {
-          const itemsList = products
-            .slice(0, 3)
-            .map((p) => `• *${p.name}* — ${p.price} EGP\n  ${p.description || ""}`)
-            .join("\n\n");
-          return {
-            replyText: `لقيت لحضرتك الأصناف دي من المنيو ❤️:\n\n${itemsList}\n\nتحب تطلب إيه منهم أو تسأل عن تفاصيل أكتر؟`,
-            products,
-          };
-        } else {
-          const itemsList = products
-            .slice(0, 3)
-            .map((p) => `• *${p.name}* — $${p.price.toFixed(2)}\n  ${p.description || ""}`)
-            .join("\n\n");
-          return {
-            replyText: `Here is what I found from our menu for you:\n\n${itemsList}\n\nWould you like to add any of these to your table order?`,
-            products,
-          };
-        }
+        return {
+          replyText: reply,
+          products,
+        };
       }
 
-      // Default conversational reply if search yielded no specific products
-      if (isArabic) {
+      // 3. Fallback friendly conversational replies
+      if (lower.includes("أهلا") || lower.includes("مرحبا") || lower.includes("سلام") || lower.includes("مساء") || lower.includes("صباح")) {
+        return {
+          replyText: `أهلاً بحضرتك يا فندم في أبل فود! ❤️ أنا المساعد الذكي، تحت أمرك لمساعدتك في اختيار أشهى الأطباق والبيتزا أو طلب الأوردر. تحب تبدأ باقتراحات المنيو؟`,
+          products: [],
+        };
+      } else if (lower.includes("شكرا") || lower.includes("تمام") || lower.includes("تسلم")) {
         return {
           replyText: `تمام يا فندم ❤️! أنا تحت أمرك. تحب تسأل عن أطباق معينة، مشروبات، أو تحب أرشحلك أفضل الأصناف؟`,
           products: [],
         };
       } else {
         return {
-          replyText: `I'm here to help! Feel free to ask about specific dishes, fresh juices, chef specials, or dietary options.`,
-          products: [],
+          replyText: `I'm at your service! Let me know what you'd like to taste today.`,
         };
       }
     } catch (error: any) {
@@ -106,11 +109,8 @@ export class DirectSearchChatTransport implements ChatTransport {
 }
 
 /**
- * WebhookChatTransport (Scaffolded for Future n8n Webhook Swap)
- * 
- * TODO: activate once n8n webhook is live
- * When n8n exposes a webhook endpoint for web chat, set NEXT_PUBLIC_CHAT_WEBHOOK_URL
- * and switch getChatTransport() to return an instance of this class.
+ * WebhookChatTransport
+ * Transports chat messages to the n8n AI Agent webhook with explicit table context.
  */
 export class WebhookChatTransport implements ChatTransport {
   private webhookUrl: string;
@@ -120,17 +120,33 @@ export class WebhookChatTransport implements ChatTransport {
   }
 
   async sendMessage(input: ChatTransportInput): Promise<ChatTransportResponse> {
-    const fallbackSessionId =
-      input.sessionId ||
-      input.tableSessionId ||
-      `web_guest_${Date.now()}`;
+    let activeSessionId = input.sessionId || input.tableSessionId;
+
+    if (!activeSessionId && typeof window !== "undefined") {
+      try {
+        const saved = sessionStorage.getItem("tablechat_session_state");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          activeSessionId = parsed.tableSessionId || parsed.chatId;
+        }
+      } catch {}
+    }
+
+    if (!activeSessionId) {
+      activeSessionId = `web_guest_${Date.now()}`;
+    }
+
+    const hasTable = Boolean(input.tableNumber && input.tableSessionId);
 
     const payload = {
-      sessionId: fallbackSessionId,
+      sessionId: activeSessionId,
       tenantId: input.tenantId || "",
       branchId: input.branchId || "",
+      tableNumber: input.tableNumber || "",
       tableId: input.tableId || "",
-      tableSessionId: input.tableSessionId || fallbackSessionId,
+      tableSessionId: input.tableSessionId || "",
+      isTableDineIn: hasTable,
+      fulfillmentMode: hasTable ? "DINE_IN" : "OFF_PREMISE",
       message: input.message,
       channel: "web",
     };

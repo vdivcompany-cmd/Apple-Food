@@ -60,8 +60,8 @@ export function Header({ onToggleSidebar, isSidebarOpen }: HeaderProps) {
           </Link>
         </div>
 
-        {/* Desktop Navigation (>= 1024px only) */}
-        <nav className="hidden lg:flex items-center gap-7 h-full font-arabic">
+        {/* Desktop Navigation (>= 1024px only) - Centered */}
+        <nav className="hidden lg:flex items-center gap-8 h-full font-arabic absolute left-1/2 -translate-x-1/2">
           <Link
             href="/"
             className={`h-full flex items-center font-bold text-sm lg:text-base transition-colors ${

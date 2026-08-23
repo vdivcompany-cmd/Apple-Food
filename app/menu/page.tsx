@@ -23,7 +23,7 @@ export default function MenuPage() {
     <div className="h-full min-h-screen bg-background text-on-surface flex flex-col antialiased font-arabic">
       <Header />
 
-      <main className="flex-1 max-w-6xl mx-auto px-4 md:px-8 py-6 w-full space-y-6">
+      <main className="flex-1 ml-0 lg:ml-80 px-4 md:px-8 py-6 w-auto space-y-6 max-w-6xl mx-auto">
         {/* Top Header Bar */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-surface-container-lowest p-6 rounded-3xl border border-surface-variant/40 shadow-card-soft">
           <div>

@@ -168,8 +168,9 @@ export default function FeedbackPage() {
     <div className="min-h-screen bg-background text-on-surface font-arabic flex flex-col antialiased">
       <Header />
 
-      <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 flex flex-col justify-center">
-        {isSubmitted ? (
+      <main className="flex-1 ml-0 lg:ml-80 w-auto px-4 sm:px-6 lg:px-12 py-8 md:py-12 flex flex-col items-center justify-center">
+        <div className="w-full max-w-4xl mx-auto">
+          {isSubmitted ? (
           <div className="bg-surface-container-lowest rounded-3xl p-8 sm:p-14 text-center shadow-card-elevated border border-primary/20 animate-fade-in space-y-6 max-w-2xl mx-auto w-full">
             <div className="w-24 h-24 mx-auto rounded-full bg-primary/10 flex items-center justify-center text-primary text-5xl shadow-inner">
               🎉
@@ -357,6 +358,7 @@ export default function FeedbackPage() {
             </form>
           </div>
         )}
+        </div>
       </main>
     </div>
   );

@@ -8,7 +8,7 @@ export default function TrackingPage() {
   return (
     <div className="h-full min-h-screen bg-background text-on-surface flex flex-col antialiased">
       <Header />
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 ml-0 lg:ml-80 overflow-y-auto">
         <OrderTrackingView />
       </main>
     </div>

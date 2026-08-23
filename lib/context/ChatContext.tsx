@@ -15,22 +15,69 @@ interface ChatContextType {
   placeTableOrder: (productId: string, quantity?: number, variantId?: string) => Promise<PlacedOrderData | null>;
 }
 
+const CHAT_MESSAGES_STORAGE_KEY = "tablechat_chat_messages";
+const CHAT_PRODUCTS_STORAGE_KEY = "tablechat_chat_products";
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
   const { session, expireSession } = useSession();
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "initial-ai-welcome",
-      sender: "ai",
-      text: session.tableNumber
-        ? `أهلاً بحضرتك في طاولة ${session.tableNumber}! أنا ResBot مساعدك الذكي في ${session.restaurantName}. تحت أمرك لأي طلب أو استفسار عن المنيو ❤️`
-        : `أهلاً بحضرتك في ${session.restaurantName}! أنا ResBot مساعدك الذكي. تحت أمرك لاستعراض المنيو وطلب الدليفري أو الاستلام ❤️`,
-      timestamp: "الآن",
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = sessionStorage.getItem(CHAT_MESSAGES_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        }
+      } catch (e) {
+        console.warn("[ChatProvider] Failed to load cached messages:", e);
+      }
+    }
+    return [
+      {
+        id: "initial-ai-welcome",
+        sender: "ai",
+        text: session.tableNumber
+          ? `أهلاً بحضرتك في طاولة ${session.tableNumber}! أنا ResBot مساعدك الذكي في ${session.restaurantName}. تحت أمرك لأي طلب أو استفسار عن المنيو ❤️`
+          : `أهلاً بحضرتك في ${session.restaurantName}! أنا ResBot مساعدك الذكي. تحت أمرك لاستعراض المنيو وطلب الدليفري أو الاستلام ❤️`,
+        timestamp: "الآن",
+      },
+    ];
+  });
   const [isTyping, setIsTyping] = useState<boolean>(false);
-  const [searchedProducts, setSearchedProducts] = useState<SearchedProduct[]>([]);
+  const [searchedProducts, setSearchedProducts] = useState<SearchedProduct[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = sessionStorage.getItem(CHAT_PRODUCTS_STORAGE_KEY);
+        if (saved) {
+          return JSON.parse(saved);
+        }
+      } catch {}
+    }
+    return [];
+  });
+
+  // Sync messages to sessionStorage
+  React.useEffect(() => {
+    if (typeof window !== "undefined" && messages.length > 0) {
+      try {
+        sessionStorage.setItem(CHAT_MESSAGES_STORAGE_KEY, JSON.stringify(messages));
+      } catch (e) {
+        console.warn("[ChatProvider] Failed to persist messages:", e);
+      }
+    }
+  }, [messages]);
+
+  // Sync searchedProducts to sessionStorage
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem(CHAT_PRODUCTS_STORAGE_KEY, JSON.stringify(searchedProducts));
+      } catch {}
+    }
+  }, [searchedProducts]);
 
   // Listen for real-time order confirmation from restaurant staff / phone call verification
   React.useEffect(() => {
@@ -172,8 +219,20 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   };
 
   const clearChat = () => {
-    setMessages([]);
+    const initialWelcome: ChatMessage = {
+      id: "initial-ai-welcome",
+      sender: "ai",
+      text: session.tableNumber
+        ? `أهلاً بحضرتك في طاولة ${session.tableNumber}! أنا ResBot مساعدك الذكي في ${session.restaurantName}. تحت أمرك لأي طلب أو استفسار عن المنيو ❤️`
+        : `أهلاً بحضرتك في ${session.restaurantName}! أنا ResBot مساعدك الذكي. تحت أمرك لاستعراض المنيو وطلب الدليفري أو الاستلام ❤️`,
+      timestamp: "الآن",
+    };
+    setMessages([initialWelcome]);
     setSearchedProducts([]);
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem(CHAT_MESSAGES_STORAGE_KEY);
+      sessionStorage.removeItem(CHAT_PRODUCTS_STORAGE_KEY);
+    }
   };
 
   return (

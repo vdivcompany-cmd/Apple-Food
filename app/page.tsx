@@ -10,7 +10,27 @@ export default function HomePage() {
   const { messages, sendMessage, isTyping } = useChat();
   const { session } = useSession();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [inputText, setInputText] = useState("");
+  const [inputText, setInputText] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return sessionStorage.getItem("tablechat_chat_input_text") || "";
+      } catch {}
+    }
+    return "";
+  });
+
+  // Sync draft input text to sessionStorage
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        if (inputText) {
+          sessionStorage.setItem("tablechat_chat_input_text", inputText);
+        } else {
+          sessionStorage.removeItem("tablechat_chat_input_text");
+        }
+      } catch {}
+    }
+  }, [inputText]);
 
   // If only initial bot message exists and no user message yet, show Welcome Landing
   const hasUserStartedChat = messages.some((m) => m.sender === "user");

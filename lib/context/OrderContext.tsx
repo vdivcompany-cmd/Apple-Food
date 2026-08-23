@@ -31,6 +31,7 @@ interface OrderContextType {
 }
 
 const ORDER_STORAGE_KEY = "tablechat_active_order";
+const ORDER_HISTORY_STORAGE_KEY = "tablechat_order_history";
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 export function OrderProvider({ children }: { children: React.ReactNode }) {
@@ -44,7 +45,18 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     }
     return null;
   });
-  const [orderHistory, setOrderHistory] = useState<PlacedOrderData[]>([]);
+  const [orderHistory, setOrderHistory] = useState<PlacedOrderData[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = sessionStorage.getItem(ORDER_HISTORY_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch {}
+    }
+    return [];
+  });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,6 +68,15 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
       }
     }
   }, [currentOrder]);
+
+  // Sync orderHistory to sessionStorage
+  useEffect(() => {
+    if (typeof window !== "undefined" && orderHistory.length > 0) {
+      try {
+        sessionStorage.setItem(ORDER_HISTORY_STORAGE_KEY, JSON.stringify(orderHistory));
+      } catch {}
+    }
+  }, [orderHistory]);
 
   // 1. Fetch table order history
   const fetchOrderHistory = useCallback(async () => {

@@ -9,12 +9,37 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
+    // Format contextual message so n8n AI Agent always knows Dine-In table vs Online guest
+    let messageToSend = body.message || "";
+    const rawTableNumber = body.tableNumber ? String(body.tableNumber).trim() : "";
+
+    if (rawTableNumber && rawTableNumber !== "undefined" && rawTableNumber !== "null") {
+      const tableContext = `[سياق النظام: العميل جالس على طاولة رقم ${rawTableNumber} داخل الصالة (DINE-IN). TableId: ${body.tableId || "active"}, Session: ${body.tableSessionId || body.sessionId}]`;
+      if (!messageToSend.includes("[سياق النظام:")) {
+        messageToSend = `${tableContext}\n${messageToSend}`;
+      }
+    } else {
+      const guestContext = `[سياق النظام: زائر أونلاين عبر الموقع بدون طاولة (تيك أواي / دليفري - OFF_PREMISE)]`;
+      if (!messageToSend.includes("[سياق النظام:")) {
+        messageToSend = `${guestContext}\n${messageToSend}`;
+      }
+    }
+
+    const payloadToSend = {
+      ...body,
+      tableNumber: rawTableNumber,
+      isTableDineIn: Boolean(rawTableNumber),
+      fulfillmentMode: rawTableNumber ? "DINE_IN" : "OFF_PREMISE",
+      message: messageToSend,
+      chatInput: messageToSend,
+    };
+
     const response = await fetch(N8N_WEBHOOK_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(payloadToSend),
     });
 
     if (!response.ok) {

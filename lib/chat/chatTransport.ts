@@ -121,13 +121,23 @@ export class WebhookChatTransport implements ChatTransport {
 
   async sendMessage(input: ChatTransportInput): Promise<ChatTransportResponse> {
     let activeSessionId = input.sessionId || input.tableSessionId;
+    let tableNumber = input.tableNumber || "";
+    let tableId = input.tableId || "";
+    let tableSessionId = input.tableSessionId || "";
+    let tenantId = input.tenantId || "";
+    let branchId = input.branchId || "";
 
-    if (!activeSessionId && typeof window !== "undefined") {
+    if (typeof window !== "undefined") {
       try {
         const saved = sessionStorage.getItem("tablechat_session_state");
         if (saved) {
           const parsed = JSON.parse(saved);
-          activeSessionId = parsed.tableSessionId || parsed.chatId;
+          if (!activeSessionId) activeSessionId = parsed.tableSessionId || parsed.chatId;
+          if (!tableNumber && parsed.tableNumber) tableNumber = String(parsed.tableNumber);
+          if (!tableId && parsed.tableId) tableId = parsed.tableId;
+          if (!tableSessionId && parsed.tableSessionId) tableSessionId = parsed.tableSessionId;
+          if (!tenantId && parsed.tenantId) tenantId = parsed.tenantId;
+          if (!branchId && parsed.branchId) branchId = parsed.branchId;
         }
       } catch {}
     }
@@ -136,15 +146,15 @@ export class WebhookChatTransport implements ChatTransport {
       activeSessionId = `web_guest_${Date.now()}`;
     }
 
-    const hasTable = Boolean(input.tableNumber && input.tableSessionId);
+    const hasTable = Boolean(tableNumber && (tableSessionId || tableId));
 
     const payload = {
       sessionId: activeSessionId,
-      tenantId: input.tenantId || "",
-      branchId: input.branchId || "",
-      tableNumber: input.tableNumber || "",
-      tableId: input.tableId || "",
-      tableSessionId: input.tableSessionId || "",
+      tenantId,
+      branchId,
+      tableNumber,
+      tableId,
+      tableSessionId,
       isTableDineIn: hasTable,
       fulfillmentMode: hasTable ? "DINE_IN" : "OFF_PREMISE",
       message: input.message,

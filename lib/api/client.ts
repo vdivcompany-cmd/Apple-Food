@@ -126,6 +126,9 @@ export interface PlaceOrderPayload {
   branchId: string;
   tableId: string;
   tableSessionId: string;
+  customerName?: string;
+  customerPhone?: string;
+  couponCode?: string;
   items: PlaceOrderItemInput[];
 }
 
@@ -135,10 +138,38 @@ export interface PlaceCustomerOrderPayload {
   channel: "TAKEAWAY" | "DELIVERY";
   customerName: string;
   customerPhone: string;
+  customerEmail?: string;
+  couponCode?: string;
   deliveryAddress?: string;
   notes?: string;
   items: PlaceOrderItemInput[];
 }
+
+export interface CreateFeedbackPayload {
+  tenantId: string;
+  branchId?: string;
+  orderId?: string;
+  rating: number; // 1 to 5
+  comment?: string;
+  customerName?: string;
+}
+
+export interface CouponValidationResponse {
+  valid: boolean;
+  coupon?: {
+    id: string;
+    code: string;
+    discountType: string;
+    discountValue: number;
+    discountPercentage?: number;
+  };
+  discountAmount?: number;
+  discountPercentage?: number;
+  subtotal?: number;
+  newTotal?: number;
+  reason?: string;
+}
+
 
 export interface PlacedOrderData {
   _id: string;
@@ -423,6 +454,33 @@ export const apiClient = {
       { forceRefresh, ttlMs: 10 * 60 * 1000 }
     );
   },
+
+  /**
+   * 11. Validate Coupon code
+   * GET /api/v1/coupons/validate?tenantId={tenantId}&code={code}&subtotal={subtotal}
+   */
+  async validateCoupon(tenantId: string, code: string, subtotal?: number): Promise<CouponValidationResponse> {
+    const subtotalParam = subtotal !== undefined ? `&subtotal=${encodeURIComponent(subtotal)}` : "";
+    return request<CouponValidationResponse>(
+      `/api/v1/coupons/validate?tenantId=${encodeURIComponent(tenantId)}&code=${encodeURIComponent(code)}${subtotalParam}`,
+      { useCache: false }
+    );
+  },
+
+  /**
+   * 12. Submit Customer Feedback
+   * POST /api/v1/feedback
+   */
+  async createFeedback(payload: CreateFeedbackPayload): Promise<ApiResponse<any>> {
+    return request<ApiResponse<any>>("/api/v1/feedback", {
+      method: "POST",
+      headers: {
+        "X-Tenant-ID": payload.tenantId,
+      },
+      body: JSON.stringify(payload),
+    });
+  },
+
 
   /**
    * Synchronously retrieve cached data from memory or localStorage (0ms initial mount helper)

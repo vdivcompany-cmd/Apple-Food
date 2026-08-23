@@ -234,58 +234,92 @@ export function WelcomeView({
           experience started today?
         </p>
 
-        {/* Action Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-          {/* Card 1: View Menu */}
-          <button
-            onClick={() => {
-              if (menuDoc?.url) {
-                setShowMenuDocModal(true);
-              } else {
-                onViewMenu?.();
-                onSelectPrompt?.(
-                  "Can you show me the full menu and recommend popular dishes?",
-                );
-              }
-            }}
-            className="flex flex-col items-center justify-center p-6 bg-surface-container-lowest rounded-2xl shadow-card-soft hover:scale-[0.98] transition-all border border-outline-variant/30 hover:border-primary-container group cursor-pointer text-center"
-          >
-            <div className="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center mb-3 group-hover:bg-primary-fixed transition-colors">
-              <span className="material-symbols-outlined text-on-surface group-hover:text-primary transition-colors text-2xl">
-                restaurant_menu
+        {/* Action Cards Grid - Reorder button only appears on Table QR scans */}
+        {Boolean(session.tableNumber && session.tableId) ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+            {/* Card 1: View Menu */}
+            <button
+              onClick={() => {
+                if (menuDoc?.url) {
+                  setShowMenuDocModal(true);
+                } else {
+                  onViewMenu?.();
+                  onSelectPrompt?.(
+                    "Can you show me the full menu and recommend popular dishes?",
+                  );
+                }
+              }}
+              className="flex flex-col items-center justify-center p-6 bg-surface-container-lowest rounded-2xl shadow-card-soft hover:scale-[0.98] transition-all border border-outline-variant/30 hover:border-primary-container group cursor-pointer text-center"
+            >
+              <div className="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center mb-3 group-hover:bg-primary-fixed transition-colors">
+                <span className="material-symbols-outlined text-on-surface group-hover:text-primary transition-colors text-2xl">
+                  restaurant_menu
+                </span>
+              </div>
+              <span className="font-bold text-base text-on-surface">
+                View Menu
               </span>
-            </div>
-            <span className="font-bold text-base text-on-surface">
-              View Menu
-            </span>
-            <span className="text-xs text-on-surface-variant mt-1">
-              {menuDoc
-                ? "View full restaurant menu document (Cloudinary)"
-                : "Browse chef recommendations & items"}
-            </span>
-          </button>
+              <span className="text-xs text-on-surface-variant mt-1">
+                {menuDoc
+                  ? "View full restaurant menu document (Cloudinary)"
+                  : "Browse chef recommendations & items"}
+              </span>
+            </button>
 
-          {/* Card 2: Reorder Last Order */}
-          <button
-            onClick={handleReorderClick}
-            disabled={reorderLoading}
-            className="flex flex-col items-center justify-center p-6 bg-surface-container-lowest rounded-2xl shadow-card-soft hover:scale-[0.98] transition-all border border-outline-variant/30 hover:border-primary-container group cursor-pointer text-center"
-          >
-            <div className="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center mb-3 group-hover:bg-primary-fixed transition-colors">
-              <span className="material-symbols-outlined text-on-surface group-hover:text-primary transition-colors text-2xl">
-                history
+            {/* Card 2: Reorder Last Order (Table QR only) */}
+            <button
+              onClick={handleReorderClick}
+              disabled={reorderLoading}
+              className="flex flex-col items-center justify-center p-6 bg-surface-container-lowest rounded-2xl shadow-card-soft hover:scale-[0.98] transition-all border border-outline-variant/30 hover:border-primary-container group cursor-pointer text-center"
+            >
+              <div className="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center mb-3 group-hover:bg-primary-fixed transition-colors">
+                <span className="material-symbols-outlined text-on-surface group-hover:text-primary transition-colors text-2xl">
+                  history
+                </span>
+              </div>
+              <span className="font-bold text-base text-on-surface">
+                {reorderLoading ? "Placing..." : "Reorder Last Order"}
               </span>
-            </div>
-            <span className="font-bold text-base text-on-surface">
-              {reorderLoading ? "Placing..." : "Reorder Last Order"}
-            </span>
-            <span className="text-xs text-on-surface-variant mt-1">
-              {lastOrder
-                ? `Quick reorder ${lastOrder.items.length} items (${lastOrder.totalAmount} ${session.currency})`
-                : "Get your usual favorites again quickly"}
-            </span>
-          </button>
-        </div>
+              <span className="text-xs text-on-surface-variant mt-1">
+                {lastOrder
+                  ? `Quick reorder ${lastOrder.items.length} items (${lastOrder.totalAmount} ${session.currency})`
+                  : "Get your usual favorites again quickly"}
+              </span>
+            </button>
+          </div>
+        ) : (
+          <div className="max-w-md mx-auto mt-4">
+            {/* Card 1: View Menu (Full width for non-table visitors) */}
+            <button
+              onClick={() => {
+                if (menuDoc?.url) {
+                  setShowMenuDocModal(true);
+                } else {
+                  onViewMenu?.();
+                  onSelectPrompt?.(
+                    "Can you show me the full menu and recommend popular dishes?",
+                  );
+                }
+              }}
+              className="w-full flex flex-col items-center justify-center p-6 bg-surface-container-lowest rounded-2xl shadow-card-soft hover:scale-[0.98] transition-all border border-outline-variant/30 hover:border-primary-container group cursor-pointer text-center"
+            >
+              <div className="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center mb-3 group-hover:bg-primary-fixed transition-colors">
+                <span className="material-symbols-outlined text-on-surface group-hover:text-primary transition-colors text-2xl">
+                  restaurant_menu
+                </span>
+              </div>
+              <span className="font-bold text-base text-on-surface">
+                View Menu (تصفح المنيو)
+              </span>
+              <span className="text-xs text-on-surface-variant mt-1">
+                {menuDoc
+                  ? "View full restaurant menu document (Cloudinary)"
+                  : "Browse chef recommendations & popular items"}
+              </span>
+            </button>
+          </div>
+        )}
+
 
         {/* Quick Suggestion Chips */}
         <div className="pt-2">

@@ -21,6 +21,7 @@ export function Header({ onToggleSidebar, isSidebarOpen }: HeaderProps) {
   const isOrderActive =
     pathname === "/tracking" || pathname?.includes("order-tracking");
   const isMenuActive = pathname === "/menu";
+  const isFeedbackActive = pathname === "/feedback";
 
   return (
     <header className="bg-surface/90 dark:bg-inverse-surface/90 backdrop-blur-xl shadow-sm flex justify-between items-center px-3 sm:px-6 md:px-5 w-full h-16 sticky top-0 z-50 border-b border-surface-variant/30">
@@ -55,7 +56,7 @@ export function Header({ onToggleSidebar, isSidebarOpen }: HeaderProps) {
       </div>
 
       {/* Desktop Navigation */}
-      <nav className="hidden md:flex items-center gap-8 h-full font-arabic">
+      <nav className="hidden md:flex items-center gap-7 h-full font-arabic">
         <Link
           href="/"
           className={`h-full flex items-center font-bold text-sm md:text-base transition-colors ${
@@ -89,7 +90,21 @@ export function Header({ onToggleSidebar, isSidebarOpen }: HeaderProps) {
             <span>Menu (المنيو)</span>
           </span>
         </Link>
+        <Link
+          href="/feedback"
+          className={`h-full flex items-center text-sm md:text-base transition-colors ${
+            isFeedbackActive
+              ? "text-primary font-bold border-b-2 border-primary"
+              : "text-secondary hover:text-primary"
+          }`}
+        >
+          <span className="flex items-center gap-1.5 font-bold">
+            <span className="material-symbols-outlined text-lg">hotel_class</span>
+            <span>Feedback (التقييم)</span>
+          </span>
+        </Link>
       </nav>
+
 
       {/* Table & Session Indicator */}
       <div className="flex items-center gap-2 sm:gap-3 font-arabic">

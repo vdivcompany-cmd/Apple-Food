@@ -12,11 +12,16 @@ interface OrderContextType {
   isPolling: boolean;
   error: string | null;
   fetchOrderHistory: () => Promise<void>;
-  placeNewOrder: (items: PlaceOrderItemInput[]) => Promise<PlacedOrderData | null>;
+  placeNewOrder: (
+    items: PlaceOrderItemInput[],
+    options?: { couponCode?: string }
+  ) => Promise<PlacedOrderData | null>;
   placeNewCustomerOrder: (params: {
     channel: "TAKEAWAY" | "DELIVERY";
     customerName: string;
     customerPhone: string;
+    customerEmail?: string;
+    couponCode?: string;
     deliveryAddress?: string;
     notes?: string;
     items: PlaceOrderItemInput[];
@@ -121,7 +126,10 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
   usePolling(pollStatus, 5000, !isTerminalState);
 
   // 3. Place Dine-In QR order strictly following backend rules (no price sent)
-  const placeNewOrder = async (items: PlaceOrderItemInput[]): Promise<PlacedOrderData | null> => {
+  const placeNewOrder = async (
+    items: PlaceOrderItemInput[],
+    options?: { couponCode?: string }
+  ): Promise<PlacedOrderData | null> => {
     if (!session.tableId || !session.tenantId || !session.tableSessionId) {
       setError("Active table session missing.");
       return null;
@@ -136,6 +144,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
         branchId: session.branchId,
         tableId: session.tableId,
         tableSessionId: session.tableSessionId,
+        ...(options?.couponCode ? { couponCode: options.couponCode } : {}),
         items,
       });
 
@@ -158,6 +167,8 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     channel: "TAKEAWAY" | "DELIVERY";
     customerName: string;
     customerPhone: string;
+    customerEmail?: string;
+    couponCode?: string;
     deliveryAddress?: string;
     notes?: string;
     items: PlaceOrderItemInput[];
@@ -172,6 +183,8 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
         channel: params.channel,
         customerName: params.customerName,
         customerPhone: params.customerPhone,
+        customerEmail: params.customerEmail,
+        couponCode: params.couponCode,
         deliveryAddress: params.deliveryAddress,
         notes: params.notes,
         items: params.items,
@@ -191,6 +204,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+
   // 4. Reorder flow matching n8n automation
   const reorderLastOrder = async (orderId: string): Promise<PlacedOrderData | null> => {
     try {
@@ -202,12 +216,19 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
       const items: PlaceOrderItemInput[] = oldOrderRes.data.items.map((i) => {
         const prodId = typeof i.productId === "object" ? (i.productId as any)._id : i.productId;
         const v = Array.isArray(i.selectedVariants) && i.selectedVariants[0] ? i.selectedVariants[0] : null;
+        const allOptionNames = Array.isArray(i.selectedVariants)
+          ? i.selectedVariants.flatMap((variant: any) => variant?.selectedOptionNames || (variant?.name ? [variant.name] : []))
+          : [];
 
         return {
           productId: prodId,
           quantity: i.quantity,
           ...(v?.variantId ? { variantId: v.variantId } : {}),
-          ...(v?.selectedOptionNames ? { selectedOptionNames: v.selectedOptionNames } : {}),
+          ...(allOptionNames.length > 0
+            ? { selectedOptionNames: allOptionNames }
+            : v?.selectedOptionNames
+              ? { selectedOptionNames: v.selectedOptionNames }
+              : {}),
         };
       });
 

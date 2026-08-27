@@ -182,6 +182,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         branchId: session.branchId,
         tableId: session.tableId,
         tableSessionId: session.tableSessionId,
+        tableNumber: session.tableNumber || undefined,
         items: [
           {
             productId,

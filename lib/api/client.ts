@@ -126,6 +126,7 @@ export interface PlaceOrderPayload {
   branchId: string;
   tableId: string;
   tableSessionId: string;
+  tableNumber?: string | number;
   customerName?: string;
   customerPhone?: string;
   couponCode?: string;

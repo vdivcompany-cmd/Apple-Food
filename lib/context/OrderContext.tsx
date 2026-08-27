@@ -165,6 +165,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
         branchId: session.branchId,
         tableId: session.tableId,
         tableSessionId: session.tableSessionId,
+        tableNumber: session.tableNumber || undefined,
         ...(options?.couponCode ? { couponCode: options.couponCode } : {}),
         items,
       });
